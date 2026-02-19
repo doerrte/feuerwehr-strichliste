@@ -6,7 +6,7 @@ function isAdmin() {
   return !!cookies().get("userId")?.value;
 }
 
-// 📥 GET – Alle Getränke
+// GET – alle Getränke laden
 export async function GET() {
   if (!isAdmin()) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -19,7 +19,7 @@ export async function GET() {
   return NextResponse.json(drinks);
 }
 
-// ➕ POST – Neues Getränk anlegen
+// POST – neues Getränk anlegen
 export async function POST(req: Request) {
   try {
     if (!isAdmin()) {
@@ -27,6 +27,13 @@ export async function POST(req: Request) {
     }
 
     const { name, unitsPerCase, stock } = await req.json();
+
+    if (!name || !unitsPerCase) {
+      return NextResponse.json(
+        { error: "Name oder Kistengröße fehlt" },
+        { status: 400 }
+      );
+    }
 
     const drink = await prisma.drink.create({
       data: {
@@ -37,57 +44,12 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(drink);
+
   } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
-  }
-}
-
-// 🔄 PATCH – Bestand erhöhen (Nachbestellung)
-export async function PATCH(req: Request) {
-  try {
-    if (!isAdmin()) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const { id, addStock } = await req.json();
-
-    const drink = await prisma.drink.update({
-      where: { id },
-      data: {
-        stock: {
-          increment: Number(addStock),
-        },
-      },
-    });
-
-    return NextResponse.json(drink);
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
-  }
-}
-
-// ❌ DELETE – Getränk löschen
-export async function DELETE(req: Request) {
-  try {
-    if (!isAdmin()) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const { id } = await req.json();
-
-    await prisma.count.deleteMany({
-      where: { drinkId: id },
-    });
-
-    await prisma.drink.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
+    console.error("DRINK CREATE ERROR:", error);
+    return NextResponse.json(
+      { error: "Serverfehler" },
+      { status: 500 }
+    );
   }
 }

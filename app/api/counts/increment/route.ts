@@ -1,45 +1,60 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
-  const auth = cookies().get("auth");
-  if (!auth) {
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
-  }
+  try {
+    const userId = cookies().get("userId")?.value;
 
-  const { userId } = JSON.parse(auth.value);
-  const { drinkId } = await req.json();
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Nicht eingeloggt" },
+        { status: 401 }
+      );
+    }
 
-  // Eintrag finden oder neu anlegen
-  const existing = await prisma.count.findFirst({
-    where: {
-      userId,
-      drinkId,
-    },
-  });
+    const { drinkId } = await req.json();
 
-  if (existing) {
-    await prisma.count.update({
-      where: { id: existing.id },
-      data: { count: { increment: 1 } },
-    });
-  } else {
-    await prisma.count.create({
-      data: {
-        userId,
-        drinkId,
-        count: 1,
+    if (!drinkId) {
+      return NextResponse.json(
+        { error: "drinkId fehlt" },
+        { status: 400 }
+      );
+    }
+
+    const existing = await prisma.count.findUnique({
+      where: {
+        userId_drinkId: {
+          userId: Number(userId),
+          drinkId: Number(drinkId),
+        },
       },
     });
+
+    if (existing) {
+      await prisma.count.update({
+        where: { id: existing.id },
+        data: {
+          amount: { increment: 1 }, // ✅ RICHTIG
+        },
+      });
+    } else {
+      await prisma.count.create({
+        data: {
+          userId: Number(userId),
+          drinkId: Number(drinkId),
+          amount: 1, // ✅ RICHTIG
+        },
+      });
+    }
+
+    return NextResponse.json({ ok: true });
+
+  } catch (err) {
+    console.error("INCREMENT ERROR:", err);
+    return NextResponse.json(
+      { error: "Serverfehler" },
+      { status: 500 }
+    );
   }
-
-  // Neue Übersicht zurückgeben
-  const counts = await prisma.count.findMany({
-    where: { userId },
-    include: { drink: true },
-    orderBy: { drink: { name: "asc" } },
-  });
-
-  return NextResponse.json(counts);
 }

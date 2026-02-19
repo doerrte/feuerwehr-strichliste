@@ -1,31 +1,22 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
 
-export async function GET(request: Request) {
+export const dynamic = "force-dynamic";
+
+export async function GET() {
   try {
-    // 🔥 Cookie direkt aus Request lesen
-    const cookieHeader = request.headers.get("cookie");
+    const userId = cookies().get("userId")?.value;
 
-    if (!cookieHeader) {
+    if (!userId) {
       return NextResponse.json(
         { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
 
-    const match = cookieHeader.match(/userId=(\d+)/);
-
-    if (!match) {
-      return NextResponse.json(
-        { error: "Kein userId Cookie" },
-        { status: 401 }
-      );
-    }
-
-    const userId = Number(match[1]);
-
     const user = await prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: Number(userId) },
       select: {
         id: true,
         name: true,
@@ -35,15 +26,15 @@ export async function GET(request: Request) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "User nicht gefunden" },
-        { status: 401 }
+        { error: "Benutzer nicht gefunden" },
+        { status: 404 }
       );
     }
 
     return NextResponse.json(user);
 
-  } catch (err) {
-    console.error("ME ERROR:", err);
+  } catch (error) {
+    console.error("ME ERROR:", error);
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

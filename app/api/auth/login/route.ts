@@ -6,7 +6,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const { phone, password } = await req.json();
+    const body = await req.json();
+    const phone = body.phone;
+    const password = body.password;
+
+    console.log("LOGIN ATTEMPT:", phone);
 
     if (!phone || !password) {
       return NextResponse.json(
@@ -26,10 +30,11 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!user.active) {
+    if (!user.passwordHash) {
+      console.error("NO PASSWORD HASH IN DB");
       return NextResponse.json(
-        { error: "Benutzer deaktiviert" },
-        { status: 403 }
+        { error: "Kein Passwort gesetzt" },
+        { status: 500 }
       );
     }
 
@@ -61,7 +66,7 @@ export async function POST(req: Request) {
     return response;
 
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
+    console.error("LOGIN ERROR FULL:", error);
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

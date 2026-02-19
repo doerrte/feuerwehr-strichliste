@@ -6,11 +6,12 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const userId = cookies().get("userId")?.value;
+    const cookieStore = cookies();
+    const userId = cookieStore.get("userId")?.value;
 
     if (!userId) {
       return NextResponse.json(
-        { error: "Nicht eingeloggt" },
+        { error: "Unauthorized" },
         { status: 401 }
       );
     }
@@ -26,8 +27,8 @@ export async function GET() {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
+        { error: "Unauthorized" },
+        { status: 401 }
       );
     }
 

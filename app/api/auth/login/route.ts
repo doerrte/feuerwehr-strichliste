@@ -1,17 +1,12 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const phone = body.phone;
-    const password = body.password;
-
-    console.log("LOGIN ATTEMPT:", phone);
+    const { phone, password } = await req.json();
 
     if (!phone || !password) {
       return NextResponse.json(
@@ -31,20 +26,9 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!user.passwordHash) {
-      console.error("NO PASSWORD HASH IN DB");
-      return NextResponse.json(
-        { error: "Kein Passwort gesetzt" },
-        { status: 500 }
-      );
-    }
+    const valid = await bcrypt.compare(password, user.passwordHash);
 
-    const validPassword = await bcrypt.compare(
-      password,
-      user.passwordHash
-    );
-
-    if (!validPassword) {
+    if (!valid) {
       return NextResponse.json(
         { error: "Falsches Passwort" },
         { status: 401 }
@@ -64,11 +48,10 @@ export async function POST(req: Request) {
       path: "/",
     });
 
-
     return response;
 
   } catch (error) {
-    console.error("LOGIN ERROR FULL:", error);
+    console.error("LOGIN ERROR:", error);
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

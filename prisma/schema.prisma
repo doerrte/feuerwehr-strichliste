@@ -33,6 +33,10 @@ model User {
   failedLoginAttempts Int      @default(0)
   lockUntil           DateTime?
 
+  // Captcha Security
+  failedCaptchaAttempts   Int   @default(0)  
+  captchaBlockedUntil     DateTime? 
+
   counts Count[]
 
   @@index([phone])

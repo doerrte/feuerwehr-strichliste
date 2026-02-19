@@ -1,38 +1,59 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { verifyPin } from "@/lib/hash";
+import { cookies } from "next/headers";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
-  const { pin } = await req.json();
+  try {
+    const { phone, password } = await req.json();
 
-  if (!pin) {
+    if (!phone || !password) {
+      return NextResponse.json(
+        { error: "Fehlende Daten" },
+        { status: 400 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { phone },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Kein Admin-Zugang" },
+        { status: 403 }
+      );
+    }
+
+    const valid = await bcrypt.compare(
+      password,
+      user.passwordHash
+    );
+
+    if (!valid) {
+      return NextResponse.json(
+        { error: "Falsches Passwort" },
+        { status: 401 }
+      );
+    }
+
+    const response = NextResponse.json({
+      success: true,
+    });
+
+    response.cookies.set("userId", String(user.id), {
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error("ADMIN LOGIN ERROR:", error);
     return NextResponse.json(
-      { error: "PIN fehlt" },
-      { status: 400 }
+      { error: "Serverfehler" },
+      { status: 500 }
     );
   }
-
-  const admins = await prisma.admin.findMany();
-
-  for (const admin of admins) {
-    const ok = await verifyPin(pin, admin.pinHash);
-
-    if (ok) {
-      const res = NextResponse.json({ ok: true });
-
-      // 🔑 HIER PASSIERT DIE ADMIN-ROLLE
-      res.cookies.set("admin", "true", {
-        httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-      });
-
-      return res;
-    }
-  }
-
-  return NextResponse.json(
-    { error: "Unauthorized" },
-    { status: 401 }
-  );
 }

@@ -9,26 +9,18 @@ export async function GET() {
     const userId = cookies().get("userId")?.value;
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const counts = await prisma.count.findMany({
       where: { userId: Number(userId) },
-      include: {
-        drink: true,
-      },
+      include: { drink: true },
     });
 
     return NextResponse.json(counts);
 
   } catch (error) {
     console.error("COUNTS ERROR:", error);
-    return NextResponse.json(
-      { error: "Serverfehler" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
   }
 }

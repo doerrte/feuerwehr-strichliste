@@ -7,71 +7,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-///////////////////////
-// ENUMS
-///////////////////////
-
-enum Role {
-  ADMIN
-  USER
-}
-
-///////////////////////
-// USER
-///////////////////////
-
 model User {
-  id           Int      @id @default(autoincrement())
-  name         String
-  phone        String   @unique
+  id        Int     @id @default(autoincrement())
+  name      String
+  phone     String  @unique
   passwordHash String
-  role         Role     @default(USER)
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
-
-  // Rate Limit / Security
-  failedLoginAttempts Int      @default(0)
-  lockUntil           DateTime?
-
-  // Captcha Security
-  failedCaptchaAttempts   Int   @default(0)  
-  captchaBlockedUntil     DateTime? 
-
-  counts Count[]
-
-  @@index([phone])
+  role      Role
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+  counts    Count[]
 }
-
-///////////////////////
-// DRINKS / LAGER
-///////////////////////
 
 model Drink {
-  id            Int      @id @default(autoincrement())
-  name          String
-  stock         Int      @default(0)  // Gesamtflaschen
-  unitsPerCase  Int      // Flaschen pro Kiste
-  createdAt     DateTime @default(now())
-
-  counts Count[]
-
-  @@unique([name])
+  id        Int @id @default(autoincrement())
+  name      String
+  stock     Int
+  unitsPerCase Int
+  createdAt DateTime @default(now())
+  counts    Count[]
 }
 
-///////////////////////
-// STRICHLISTE
-///////////////////////
-
 model Count {
-  id       Int @id @default(autoincrement())
-  userId   Int
-  drinkId  Int
-  amount   Int @default(0)
+  id      Int @id @default(autoincrement())
+  userId  Int
+  drinkId Int
+  amount  Int
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  drink Drink @relation(fields: [drinkId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+  drink Drink @relation(fields: [drinkId], references: [id])
 
   @@unique([userId, drinkId])
-  @@index([userId])
-  @@index([drinkId])
+}
+
+enum Role {
+  USER
+  ADMIN
 }

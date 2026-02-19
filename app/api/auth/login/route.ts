@@ -9,10 +9,7 @@ export async function POST(req: Request) {
     const { phone, password } = await req.json();
 
     if (!phone || !password) {
-      return NextResponse.json(
-        { error: "Fehlende Daten" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Fehlende Daten" }, { status: 400 });
     }
 
     const user = await prisma.user.findUnique({
@@ -20,19 +17,13 @@ export async function POST(req: Request) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Benutzer nicht gefunden" }, { status: 401 });
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
 
     if (!valid) {
-      return NextResponse.json(
-        { error: "Falsches Passwort" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Falsches Passwort" }, { status: 401 });
     }
 
     const response = NextResponse.json({
@@ -52,9 +43,6 @@ export async function POST(req: Request) {
 
   } catch (error) {
     console.error("LOGIN ERROR:", error);
-    return NextResponse.json(
-      { error: "Serverfehler" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
   }
 }

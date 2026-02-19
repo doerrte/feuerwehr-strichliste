@@ -13,7 +13,7 @@ export async function POST() {
   }
 
   await prisma.drink.updateMany({
-    data: { count: 0 },
+    data: { amount: 0 },
   });
 
   return NextResponse.json({ ok: true });

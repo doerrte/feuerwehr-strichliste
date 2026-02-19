@@ -7,13 +7,21 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   const admin = cookies().get("admin");
+
   if (admin?.value !== "true") {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { drinkId, amount } = await req.json();
 
-  const entry = await prisma.drinkCount.findUnique({
+  if (!drinkId || !amount) {
+    return NextResponse.json(
+      { error: "Fehlende Daten" },
+      { status: 400 }
+    );
+  }
+
+  const entry = await prisma.count.findUnique({
     where: {
       userId_drinkId: {
         userId: Number(params.id),
@@ -23,13 +31,16 @@ export async function POST(
   });
 
   if (!entry) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return NextResponse.json(
+      { error: "Eintrag nicht gefunden" },
+      { status: 404 }
+    );
   }
 
-  await prisma.drinkCount.update({
+  await prisma.count.update({
     where: { id: entry.id },
     data: {
-      count: Math.max(0, entry.count - amount),
+      amount: Math.max(0, entry.amount - Number(amount)),
     },
   });
 

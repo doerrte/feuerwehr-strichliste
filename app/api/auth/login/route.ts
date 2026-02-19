@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-const MAX_CAPTCHA_ATTEMPTS = 5;      // 🔥 5 freie Versuche
-const BLOCK_TIME_SECONDS = 60;       // 🔥 60 Sek Sperre
+const MAX_CAPTCHA_ATTEMPTS = 5;
+const BLOCK_TIME_SECONDS = 60;
 
 export async function POST(req: Request) {
   try {
@@ -20,15 +20,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔒 Prüfen ob aktuell gesperrt
+    // 🔒 Aktive Sperre prüfen
     if (
       user.captchaBlockedUntil &&
       new Date(user.captchaBlockedUntil) > new Date()
     ) {
       const secondsLeft = Math.ceil(
-        (new Date(user.captchaBlockedUntil).getTime() -
-          Date.now()) /
-          1000
+        (new Date(user.captchaBlockedUntil).getTime() - Date.now()) / 1000
       );
 
       return NextResponse.json(
@@ -41,54 +39,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔥 CAPTCHA FEHLER
-    if (!captchaValid) {
-
-      const newAttempts = user.failedCaptchaAttempts + 1;
-
-      // 🔥 ERST AB DEM 6. VERSUCH SPERREN
-      if (newAttempts > MAX_CAPTCHA_ATTEMPTS) {
-
-        const blockUntil = new Date(
-          Date.now() + BLOCK_TIME_SECONDS * 1000
-        );
-
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            failedCaptchaAttempts: newAttempts,
-            captchaBlockedUntil: blockUntil,
-          },
-        });
-
-        return NextResponse.json(
-          {
-            error: `Zu viele Captcha-Fehler. ${BLOCK_TIME_SECONDS} Sekunden gesperrt.`,
-            blocked: true,
-            secondsLeft: BLOCK_TIME_SECONDS,
-          },
-          { status: 403 }
-        );
-      }
-
-      // 🔥 Noch unter 6 → nur erhöhen
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          failedCaptchaAttempts: newAttempts,
-        },
-      });
-
-      return NextResponse.json(
-        {
-          error: `Captcha falsch (${newAttempts}/${MAX_CAPTCHA_ATTEMPTS})`,
-          attempts: newAttempts,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 🔑 Passwort prüfen
+    // 🔐 Passwort prüfen
     const validPassword = await bcrypt.compare(
       password,
       user.passwordHash
@@ -108,7 +59,55 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ Erfolgreicher Login → Zähler zurücksetzen
+    // 🔥 CAPTCHA nur prüfen wenn bereits Versuche existieren
+    if (user.failedCaptchaAttempts > 0) {
+
+      if (!captchaValid) {
+
+        const newAttempts = user.failedCaptchaAttempts + 1;
+
+        if (newAttempts > MAX_CAPTCHA_ATTEMPTS) {
+
+          const blockUntil = new Date(
+            Date.now() + BLOCK_TIME_SECONDS * 1000
+          );
+
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedCaptchaAttempts: newAttempts,
+              captchaBlockedUntil: blockUntil,
+            },
+          });
+
+          return NextResponse.json(
+            {
+              error: `Zu viele Captcha-Fehler. ${BLOCK_TIME_SECONDS} Sekunden gesperrt.`,
+              blocked: true,
+              secondsLeft: BLOCK_TIME_SECONDS,
+            },
+            { status: 403 }
+          );
+        }
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            failedCaptchaAttempts: newAttempts,
+          },
+        });
+
+        return NextResponse.json(
+          {
+            error: `Captcha falsch (${newAttempts}/${MAX_CAPTCHA_ATTEMPTS})`,
+            attempts: newAttempts,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // ✅ Erfolgreicher Login → alles zurücksetzen
     await prisma.user.update({
       where: { id: user.id },
       data: {

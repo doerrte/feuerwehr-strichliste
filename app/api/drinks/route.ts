@@ -8,9 +8,8 @@ export async function GET() {
       select: {
         id: true,
         name: true,
-        crates: true,
-        bottles: true,
-        bottlesPerCrate: true,
+        stock: true,
+        unitsPerCase: true,
       },
     });
 

@@ -5,30 +5,29 @@ import { cookies } from "next/headers";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  try {
-    const userId = cookies().get("userId")?.value;
+  const cookieStore = cookies();
+  const userId = Number(cookieStore.get("userId")?.value);
 
-    if (!userId) {
-      return NextResponse.json(
-        { error: "Nicht eingeloggt" },
-        { status: 401 }
-      );
-    }
-
-    const counts = await prisma.count.findMany({
-      where: { userId: Number(userId) },
-      include: {
-        drink: true,
-      },
-    });
-
-    return NextResponse.json(counts);
-
-  } catch (error) {
-    console.error("DRINKS ME ERROR:", error);
-    return NextResponse.json(
-      { error: "Serverfehler" },
-      { status: 500 }
-    );
+  if (!userId) {
+    return NextResponse.json([], { status: 401 });
   }
+
+  const drinks = await prisma.drink.findMany({
+    orderBy: { name: "asc" },
+    include: {
+      counts: {
+        where: {
+          userId: userId
+        }
+      }
+    }
+  });
+
+  const result = drinks.map(drink => ({
+    id: drink.id,
+    name: drink.name,
+    amount: drink.counts[0]?.amount ?? 0
+  }));
+
+  return NextResponse.json(result);
 }

@@ -114,6 +114,9 @@ export default function DashboardPage() {
 
       <section className="bg-white p-4 rounded-xl shadow space-y-4">
         {drinks.map((d) => {
+          const stock = d.stock ?? 0;
+          const units = d.unitsPerCase || 1;
+
           const stockCases = Math.floor(d.stock / d.unitsPerCase);
           const stockBottles = d.stock % d.unitsPerCase;
 

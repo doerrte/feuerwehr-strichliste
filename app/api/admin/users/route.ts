@@ -31,6 +31,7 @@ export async function GET() {
     select: {
       id: true,
       name: true,
+      role: true,
       active: true,
     },
     orderBy: { name: "asc" },

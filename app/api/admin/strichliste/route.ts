@@ -2,11 +2,26 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-export async function GET(req: Request) {
-  const userId = cookies().get("userId")?.value;
-  const role = cookies().get("role")?.value;
+async function requireAdmin() {
+  const cookieStore = cookies();
+  const userId = cookieStore.get("userId")?.value;
 
-  if (!userId || role !== "ADMIN") {
+  if (!userId) return null;
+
+  const user = await prisma.user.findUnique({
+    where: { id: Number(userId) },
+    select: { role: true },
+  });
+
+  if (!user || user.role !== "ADMIN") return null;
+
+  return Number(userId);
+}
+
+export async function GET(req: Request) {
+  const adminId = await requireAdmin();
+
+  if (!adminId) {
     return NextResponse.json(
       { error: "Nicht erlaubt" },
       { status: 403 }
@@ -15,6 +30,10 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const selectedUserId = Number(searchParams.get("userId"));
+
+  if (!selectedUserId) {
+    return NextResponse.json([]);
+  }
 
   const drinks = await prisma.drink.findMany({
     orderBy: { name: "asc" },
@@ -37,10 +56,9 @@ export async function GET(req: Request) {
 }
 
 export async function PUT(req: Request) {
-  const userId = cookies().get("userId")?.value;
-  const role = cookies().get("role")?.value;
+  const adminId = await requireAdmin();
 
-  if (!userId || role !== "ADMIN") {
+  if (!adminId) {
     return NextResponse.json(
       { error: "Nicht erlaubt" },
       { status: 403 }

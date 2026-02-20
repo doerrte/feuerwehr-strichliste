@@ -27,6 +27,7 @@ export default function AdminStrichlistePage() {
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
+    console.log("STRICHLISTE PAGE GELADEN");
     loadUsers();
     loadDrinks();
   }, []);
@@ -94,7 +95,7 @@ export default function AdminStrichlistePage() {
   async function updateCount(drinkId: number, newAmount: number) {
     if (!selectedUser) return;
 
-    await fetch("/api/admin/counts/update", {
+    await fetch("/api/admin/counts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

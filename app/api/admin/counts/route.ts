@@ -3,16 +3,17 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
 async function requireAdmin() {
-  const userId = Number(cookies().get("userId")?.value);
-  if (!userId) return null;
+  const userIdCookie = cookies().get("userId")?.value;
+  if (!userIdCookie) return null;
 
   const user = await prisma.user.findUnique({
-    where: { id: userId },
+    where: { id: Number(userIdCookie) },
+    select: { role: true },
   });
 
   if (!user || user.role !== "ADMIN") return null;
 
-  return user;
+  return Number(userIdCookie);
 }
 
 /* =========================
@@ -43,4 +44,33 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json(counts);
+}
+
+/* =========================
+   POST – Count updaten
+========================= */
+export async function POST(req: Request) {
+  const admin = await requireAdmin();
+  if (!admin) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  const { userId, drinkId, amount } = await req.json();
+
+  await prisma.count.upsert({
+    where: {
+      userId_drinkId: {
+        userId,
+        drinkId,
+      },
+    },
+    update: { amount },
+    create: {
+      userId,
+      drinkId,
+      amount,
+    },
+  });
+
+  return NextResponse.json({ success: true });
 }

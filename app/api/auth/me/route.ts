@@ -22,9 +22,17 @@ export async function GET() {
       },
     });
 
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!user || !user.active) {
+  const response = NextResponse.json(
+    { error: "Unauthorized" },
+    { status: 401 }
+  );
+
+  response.cookies.delete("userId");
+  response.cookies.delete("role");
+
+  return response;
+}
 
     return NextResponse.json(user);
 

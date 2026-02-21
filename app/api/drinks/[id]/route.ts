@@ -2,69 +2,48 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-function isAdmin() {
-  return !!cookies().get("userId")?.value;
+async function requireAdmin() {
+  const userId = Number(cookies().get("userId")?.value);
+  if (!userId) return false;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user || user.role !== "ADMIN") return false;
+
+  return true;
 }
 
-// 📝 Getränk bearbeiten
-export async function PUT(
+/* =========================
+   PATCH – Aktivieren/Deaktivieren
+========================= */
+export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  try {
-    if (!isAdmin()) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
-    const id = Number(params.id);
-    const { name, stock, unitsPerCase } = await req.json();
-
-    const drink = await prisma.drink.update({
-      where: { id },
-      data: {
-        name,
-        stock: Number(stock),
-        unitsPerCase: Number(unitsPerCase),
-      },
-    });
-
-    return NextResponse.json(drink);
-  } catch (err) {
-    console.error("DRINK UPDATE ERROR:", err);
+  const isAdmin = await requireAdmin();
+  if (!isAdmin) {
     return NextResponse.json(
-      { error: "Serverfehler" },
-      { status: 500 }
+      { error: "Nicht erlaubt" },
+      { status: 403 }
     );
   }
-}
 
-// ❌ Getränk löschen
-export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    if (!isAdmin()) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+  const id = Number(params.id);
+  const { active } = await req.json();
 
-    const id = Number(params.id);
-
-    // zuerst alle Counts löschen
-    await prisma.count.deleteMany({
-      where: { drinkId: id },
-    });
-
-    await prisma.drink.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    console.error("DRINK DELETE ERROR:", err);
+  if (typeof active !== "boolean") {
     return NextResponse.json(
-      { error: "Serverfehler" },
-      { status: 500 }
+      { error: "Ungültiger Wert" },
+      { status: 400 }
     );
   }
+
+  await prisma.drink.update({
+    where: { id },
+    data: { active },
+  });
+
+  return NextResponse.json({ success: true });
 }

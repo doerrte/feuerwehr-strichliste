@@ -5,28 +5,40 @@ import { cookies } from "next/headers";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const userId = Number(cookies().get("userId")?.value);
+  try {
+    const userId = Number(cookies().get("userId")?.value);
 
-  if (!userId) {
-    return NextResponse.json([], { status: 401 });
-  }
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  const drinks = await prisma.drink.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      counts: {
-        where: { userId },
+    const drinks = await prisma.drink.findMany({
+      orderBy: { name: "asc" },
+      include: {
+        counts: {
+          where: { userId },
+        },
       },
-    },
-  });
+    });
 
-  const result = drinks.map((drink) => ({
-    id: drink.id,
-    name: drink.name,
-    amount: drink.counts[0]?.amount ?? 0,
-    stock: drink.stock ?? 0,
-    unitsPerCase: drink.unitsPerCase ?? 0,
-  }));
+    const result = drinks.map((drink) => {
+      const amount = drink.counts[0]?.amount ?? 0;
 
-  return NextResponse.json(result);
+      return {
+        id: drink.id,
+        name: drink.name,
+        amount,
+        stock: drink.stock ?? 0,
+        unitsPerCase: drink.unitsPerCase ?? 1,
+      };
+    });
+
+    return NextResponse.json(result);
+  } catch (error) {
+    console.error("DRINKS ME ERROR:", error);
+    return NextResponse.json(
+      { error: "Serverfehler" },
+      { status: 500 }
+    );
+  }
 }

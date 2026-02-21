@@ -8,21 +8,22 @@ datasource db {
 }
 
 model User {
-  id        Int     @id @default(autoincrement())
-  name      String
-  phone     String  @unique
+  id           Int      @id @default(autoincrement())
+  name         String
+  phone        String   @unique
   passwordHash String
-  role      Role
-  active    Boolean @default(true)
-  createdAt DateTime @default(now())
-  counts    Count[]
+  role         Role     @default(USER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  counts       Count[]
 }
 
 model Drink {
   id           Int      @id @default(autoincrement())
   name         String
-  stock        Int
-  unitsPerCase Int
+  stock        Int      @default(0)
+  unitsPerCase Int      @default(1)
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
@@ -30,10 +31,10 @@ model Drink {
 }
 
 model Count {
-  id      Int @id @default(autoincrement())
-  userId  Int
-  drinkId Int
-  amount  Int
+  id       Int @id @default(autoincrement())
+  userId   Int
+  drinkId  Int
+  amount   Int @default(0)
 
   user  User  @relation(fields: [userId], references: [id])
   drink Drink @relation(fields: [drinkId], references: [id])
@@ -42,6 +43,6 @@ model Count {
 }
 
 enum Role {
-  USER
   ADMIN
+  USER
 }

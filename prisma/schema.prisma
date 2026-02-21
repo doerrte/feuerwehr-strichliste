@@ -20,14 +20,14 @@ model User {
 }
 
 model Drink {
-  id           Int      @id @default(autoincrement())
-  name         String
-  stock        Int      @default(0)
-  unitsPerCase Int      @default(1)
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  id            Int      @id @default(autoincrement())
+  name          String
+  stock         Int      @default(0)
+  unitsPerCase  Int      @default(0)
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
-  counts       Count[]
+  counts        Count[]
 }
 
 model Count {

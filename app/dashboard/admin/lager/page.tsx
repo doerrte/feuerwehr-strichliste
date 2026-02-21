@@ -7,12 +7,16 @@ type Drink = {
   id: number;
   name: string;
   stock: number;
+  unitsPerCase: number;
   active: boolean;
 };
 
 export default function LagerPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [name, setName] = useState("");
+  const [cases, setCases] = useState(0);
+  const [unitsPerCase, setUnitsPerCase] = useState(0);
+  const [extraBottles, setExtraBottles] = useState(0);
 
   useEffect(() => {
     load();
@@ -25,73 +29,103 @@ export default function LagerPage() {
   }
 
   async function createDrink() {
-    if (!name) return;
-
     await fetch("/api/drinks", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ name }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        cases,
+        unitsPerCase,
+        extraBottles,
+      }),
     });
 
     setName("");
-    load();
-  }
-
-  async function toggleActive(id: number, active: boolean) {
-    await fetch(`/api/drinks/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ active: !active }),
-    });
+    setCases(0);
+    setUnitsPerCase(0);
+    setExtraBottles(0);
 
     load();
   }
 
   async function generateQRCode(id: number) {
-    const baseUrl =
+    const base =
       process.env.NEXT_PUBLIC_BASE_URL ||
       window.location.origin;
 
-    const url = `${baseUrl}/scan/${id}`;
-
-    return await QRCode.toDataURL(url);
+    return QRCode.toDataURL(`${base}/scan/${id}`);
   }
 
   return (
     <main className="p-6 space-y-6">
-      <h1 className="text-xl font-bold">📦 Lagerverwaltung</h1>
+      <h1 className="text-xl font-bold">
+        📦 Lagerverwaltung
+      </h1>
 
       {/* Neues Getränk */}
-      <div className="flex gap-2">
+      <div className="grid gap-2 bg-white p-4 rounded shadow">
         <input
-          type="text"
           placeholder="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="border rounded px-2 py-1"
+          className="border p-2 rounded"
         />
+
+        <input
+          type="number"
+          placeholder="Kisten"
+          value={cases}
+          onChange={(e) => setCases(Number(e.target.value))}
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="number"
+          placeholder="Flaschen pro Kiste"
+          value={unitsPerCase}
+          onChange={(e) =>
+            setUnitsPerCase(Number(e.target.value))
+          }
+          className="border p-2 rounded"
+        />
+
+        <input
+          type="number"
+          placeholder="Einzelflaschen"
+          value={extraBottles}
+          onChange={(e) =>
+            setExtraBottles(Number(e.target.value))
+          }
+          className="border p-2 rounded"
+        />
+
         <button
           onClick={createDrink}
-          className="px-4 py-1 bg-green-600 text-white rounded"
+          className="bg-green-600 text-white py-2 rounded"
         >
           Erstellen
         </button>
       </div>
 
-      {/* Getränke Liste */}
+      {/* Bestehende Getränke */}
       <div className="space-y-4">
-        {drinks.map((drink) => (
-          <DrinkCard
-            key={drink.id}
-            drink={drink}
-            toggleActive={toggleActive}
-            generateQRCode={generateQRCode}
-          />
-        ))}
+        {drinks.map((drink) => {
+          const stockCases = Math.floor(
+            drink.stock / drink.unitsPerCase
+          );
+          const stockBottles =
+            drink.stock % drink.unitsPerCase;
+
+          return (
+            <DrinkCard
+              key={drink.id}
+              drink={drink}
+              stockCases={stockCases}
+              stockBottles={stockBottles}
+              generateQRCode={generateQRCode}
+            />
+          );
+        })}
       </div>
     </main>
   );
@@ -99,48 +133,31 @@ export default function LagerPage() {
 
 function DrinkCard({
   drink,
-  toggleActive,
+  stockCases,
+  stockBottles,
   generateQRCode,
-}: {
-  drink: Drink;
-  toggleActive: (id: number, active: boolean) => void;
-  generateQRCode: (id: number) => Promise<string>;
-}) {
+}: any) {
   const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
-    async function createQR() {
-      const code = await generateQRCode(drink.id);
-      setQr(code);
-    }
-
-    createQR();
-  }, [drink.id]);
+    generateQRCode(drink.id).then(setQr);
+  }, []);
 
   return (
-    <div className="border rounded p-4 bg-white shadow space-y-2">
-      <div className="font-medium">{drink.name}</div>
+    <div className="bg-white p-4 rounded shadow space-y-2">
+      <div className="font-bold">{drink.name}</div>
 
-      <div className="text-sm text-gray-600">
-        Bestand: {drink.stock}
+      <div className="text-sm">
+        Bestand: {drink.stock} Flaschen
+      </div>
+
+      <div className="text-xs text-gray-500">
+        = {stockCases} Kisten + {stockBottles} Flaschen
       </div>
 
       {qr && (
-        <img
-          src={qr}
-          alt="QR Code"
-          className="w-28 h-28"
-        />
+        <img src={qr} className="w-28 h-28" />
       )}
-
-      <button
-        onClick={() =>
-          toggleActive(drink.id, drink.active)
-        }
-        className="text-sm text-red-600"
-      >
-        {drink.active ? "Deaktivieren" : "Aktivieren"}
-      </button>
     </div>
   );
 }

@@ -6,8 +6,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
-    const userId = Number(cookieStore.get("userId")?.value);
+    const userId = Number(cookies().get("userId")?.value);
 
     if (!userId) {
       return NextResponse.json(
@@ -26,7 +25,6 @@ export async function GET() {
       },
     });
 
-    // 🔥 Benutzer existiert nicht oder ist deaktiviert
     if (!user || !user.active) {
       const response = NextResponse.json(
         { error: "Unauthorized" },
@@ -39,15 +37,13 @@ export async function GET() {
       return response;
     }
 
-    // ✅ Benutzer ist aktiv
     return NextResponse.json({
       id: user.id,
       name: user.name,
       role: user.role,
     });
 
-  } catch (error) {
-    console.error("ME ERROR:", error);
+  } catch {
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

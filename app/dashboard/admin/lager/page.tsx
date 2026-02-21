@@ -1,272 +1,108 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import QRCode from "qrcode";
 
 type Drink = {
   id: number;
   name: string;
   stock: number;
   unitsPerCase: number;
+  active: boolean;
 };
 
 export default function LagerPage() {
+  const router = useRouter();
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [selected, setSelected] = useState<Drink | null>(null);
-
-  const [cases, setCases] = useState("");
-  const [bottles, setBottles] = useState("");
-
   const [name, setName] = useState("");
-  const [unitsPerCase, setUnitsPerCase] = useState("");
-  const [newCases, setNewCases] = useState("");
-  const [newBottles, setNewBottles] = useState("");
+  const [stock, setStock] = useState(0);
+  const [unitsPerCase, setUnitsPerCase] = useState(12);
+  const [qrMap, setQrMap] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    loadDrinks();
+    load();
   }, []);
 
-  async function loadDrinks() {
-    const res = await fetch("/api/admin/drinks");
-    if (!res.ok) return;
+  async function load() {
+    const res = await fetch("/api/admin/drinks", {
+      credentials: "include",
+    });
 
     const data = await res.json();
     setDrinks(data);
+
+    const map: Record<number, string> = {};
+    for (const drink of data) {
+      const url = `${window.location.origin}/scan/${drink.id}`;
+      map[drink.id] = await QRCode.toDataURL(url);
+    }
+    setQrMap(map);
   }
 
-  /* ----------------------------- */
-  /*  NEUES GETRÄNK ERSTELLEN     */
-  /* ----------------------------- */
-
   async function createDrink() {
-    if (!name.trim() || !unitsPerCase) {
-      alert("Name und Flaschen pro Kiste erforderlich");
-      return;
-    }
-
-    const total =
-      (Number(newCases) || 0) * Number(unitsPerCase) +
-      (Number(newBottles) || 0);
-
-    const res = await fetch("/api/admin/drinks", {
+    await fetch("/api/admin/drinks", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
-        unitsPerCase: Number(unitsPerCase),
-        stock: total,
+        stock,
+        unitsPerCase,
       }),
     });
-
-    if (!res.ok) {
-      alert("Fehler beim Anlegen");
-      return;
-    }
 
     setName("");
-    setUnitsPerCase("");
-    setNewCases("");
-    setNewBottles("");
-
-    loadDrinks();
+    setStock(0);
+    load();
   }
 
-  /* ----------------------------- */
-  /*  MODAL ÖFFNEN                */
-  /* ----------------------------- */
-
-  function openModal(drink: Drink) {
-    setSelected(drink);
-
-    const calcCases = Math.floor(drink.stock / drink.unitsPerCase);
-    const calcBottles = drink.stock % drink.unitsPerCase;
-
-    setCases(String(calcCases));
-    setBottles(String(calcBottles));
-  }
-
-  function closeModal() {
-    setSelected(null);
-  }
-
-  /* ----------------------------- */
-  /*  BESTAND AKTUALISIEREN       */
-  /* ----------------------------- */
-
-  async function updateStock() {
-    if (!selected) return;
-
-    const total =
-      (Number(cases) || 0) * selected.unitsPerCase +
-      (Number(bottles) || 0);
-
-    const res = await fetch("/api/admin/drinks/update", {
+  async function toggle(id: number, active: boolean) {
+    await fetch("/api/admin/drinks/toggle", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        drinkId: selected.id,
-        stock: total,
-      }),
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, active: !active }),
     });
 
-    if (!res.ok) {
-      alert("Fehler beim Aktualisieren");
-      return;
-    }
-
-    closeModal();
-    loadDrinks();
-  }
-
-  /* ----------------------------- */
-  /*  GETRÄNK LÖSCHEN             */
-  /* ----------------------------- */
-
-  async function deleteDrink(id: number) {
-    if (!confirm("Getränk wirklich löschen?")) return;
-
-    const res = await fetch("/api/admin/drinks/delete", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ drinkId: id }),
-    });
-
-    if (!res.ok) {
-      alert("Fehler beim Löschen");
-      return;
-    }
-
-    loadDrinks();
+    load();
   }
 
   return (
-    <main className="p-6 space-y-6">
-      <h1 className="text-xl font-bold">
-        📦 Lagerverwaltung
-      </h1>
+    <main className="p-6 space-y-4">
+      <h1 className="text-xl font-bold">📦 Lagerverwaltung</h1>
 
-      {/* Neues Getränk */}
-      <section className="bg-white p-4 rounded-xl shadow space-y-3">
-        <h2 className="font-medium">
-          Neues Getränk
-        </h2>
+      <input
+        placeholder="Name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        className="border p-2 rounded"
+      />
 
-        <input
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
+      <button
+        onClick={createDrink}
+        className="bg-green-600 text-white px-4 py-2 rounded"
+      >
+        Erstellen
+      </button>
 
-        <input
-          placeholder="Flaschen pro Kiste"
-          type="number"
-          value={unitsPerCase}
-          onChange={(e) => setUnitsPerCase(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
+      {drinks.map((drink) => (
+        <div key={drink.id} className="bg-white p-4 rounded shadow">
+          <div className="font-semibold">{drink.name}</div>
+          <div>Bestand: {drink.stock}</div>
 
-        <input
-          placeholder="Kisten"
-          type="number"
-          value={newCases}
-          onChange={(e) => setNewCases(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
+          {qrMap[drink.id] && (
+            <img src={qrMap[drink.id]} className="w-32 mt-2" />
+          )}
 
-        <input
-          placeholder="Flaschen"
-          type="number"
-          value={newBottles}
-          onChange={(e) => setNewBottles(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-
-        <button
-          onClick={createDrink}
-          className="w-full bg-green-600 text-white py-2 rounded"
-        >
-          Anlegen
-        </button>
-      </section>
-
-      {/* Lagerübersicht */}
-      <section className="space-y-3">
-        {drinks.map((d) => {
-          const cases = Math.floor(d.stock / d.unitsPerCase);
-          const bottles = d.stock % d.unitsPerCase;
-
-          return (
-            <div
-              key={d.id}
-              className="bg-white p-3 rounded shadow flex justify-between items-center"
-            >
-              <div
-                className="cursor-pointer"
-                onClick={() => openModal(d)}
-              >
-                <div className="font-medium">{d.name}</div>
-                <div className="text-sm text-gray-600">
-                  {cases} Kisten + {bottles} Flaschen
-                </div>
-              </div>
-
-              <button
-                onClick={() => deleteDrink(d.id)}
-                className="text-red-600"
-              >
-                Löschen
-              </button>
-            </div>
-          );
-        })}
-      </section>
-
-      {/* MODAL */}
-      {selected && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl w-80 space-y-4">
-            <h2 className="font-bold">
-              Bestand ändern
-            </h2>
-
-            <input
-              type="number"
-              value={cases}
-              onChange={(e) => setCases(e.target.value)}
-              placeholder="Kisten"
-              className="w-full border p-2 rounded"
-            />
-
-            <input
-              type="number"
-              value={bottles}
-              onChange={(e) => setBottles(e.target.value)}
-              placeholder="Flaschen"
-              className="w-full border p-2 rounded"
-            />
-
-            <div className="flex justify-between">
-              <button
-                onClick={closeModal}
-                className="px-4 py-2 border rounded"
-              >
-                Abbrechen
-              </button>
-
-              <button
-                onClick={updateStock}
-                className="px-4 py-2 bg-green-600 text-white rounded"
-              >
-                Speichern
-              </button>
-            </div>
-          </div>
+          <button
+            onClick={() => toggle(drink.id, drink.active)}
+            className="text-red-600 text-sm mt-2"
+          >
+            {drink.active ? "Deaktivieren" : "Reaktivieren"}
+          </button>
         </div>
-      )}
+      ))}
     </main>
   );
 }

@@ -19,17 +19,9 @@ export async function POST(req: Request) {
       where: { phone },
     });
 
-    if (!user) {
+    if (!user || !user.active) {
       return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 401 }
-      );
-    }
-
-    // 🔥 NEU: Deaktivierungs-Check
-    if (!user.active) {
-      return NextResponse.json(
-        { error: "Benutzer ist deaktiviert" },
+        { error: "Benutzer nicht erlaubt" },
         { status: 403 }
       );
     }
@@ -54,22 +46,17 @@ export async function POST(req: Request) {
 
     response.cookies.set("userId", String(user.id), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
       path: "/",
     });
 
     response.cookies.set("role", user.role, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
       path: "/",
     });
 
     return response;
 
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

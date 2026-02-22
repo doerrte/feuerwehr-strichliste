@@ -64,7 +64,7 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
-  /* ------------------- Normal Buttons ------------------- */
+  /* ---------------- NORMAL STEPPER ---------------- */
 
   function increment(id: number) {
     const current = Number(draft[id] || 0);
@@ -98,7 +98,7 @@ export default function DashboardPage() {
     }));
   }
 
-  /* ------------------- Schnellbuchung ------------------- */
+  /* ---------------- LONG PRESS QUICK BOOK ---------------- */
 
   function handlePressStart(drink: Drink) {
     longPressTriggered.current = false;
@@ -136,7 +136,7 @@ export default function DashboardPage() {
     init();
   }
 
-  /* ------------------- Modal Buchung ------------------- */
+  /* ---------------- MODAL BOOKING ---------------- */
 
   function openConfirm(drink: Drink) {
     const value = Number(draft[drink.id]);
@@ -170,8 +170,14 @@ export default function DashboardPage() {
     return <main className="p-6">Lade...</main>;
   }
 
-  const total = drinks.reduce((s, d) => s + d.amount, 0);
-  const hasLowStock = drinks.some((d) => d.stock <= d.minStock);
+  const total = drinks.reduce(
+    (s, d) => s + d.amount,
+    0
+  );
+
+  const hasLowStock = drinks.some(
+    (d) => d.stock <= d.minStock
+  );
 
   return (
     <main className="p-6 space-y-6">
@@ -198,20 +204,39 @@ export default function DashboardPage() {
 
       <section className="bg-white p-4 rounded-xl shadow space-y-4">
         {drinks.map((d) => {
-          const cases = Math.floor(d.stock / d.unitsPerCase);
-          const bottles = d.stock % d.unitsPerCase;
+          const cases =
+            d.unitsPerCase > 0
+              ? Math.floor(d.stock / d.unitsPerCase)
+              : 0;
+
+          const bottles =
+            d.unitsPerCase > 0
+              ? d.stock % d.unitsPerCase
+              : d.stock;
+
           const isLow = d.stock <= d.minStock;
           const isEmpty = d.stock === 0;
 
           return (
-            <div key={d.id} className="border rounded p-4 space-y-2">
-              <div className="font-medium">{d.name}</div>
+            <div
+              key={d.id}
+              className="border rounded-lg p-4 space-y-2"
+            >
+              <div className="font-medium">
+                {d.name}
+              </div>
 
               <div className="text-sm text-gray-600">
                 Bereits getrunken: {d.amount}
               </div>
 
-              <div className={`text-xs font-medium ${isLow ? "text-red-600" : "text-gray-600"}`}>
+              <div
+                className={`text-xs font-medium ${
+                  isLow
+                    ? "text-red-600"
+                    : "text-gray-600"
+                }`}
+              >
                 Lagerbestand: {d.stock}
               </div>
 
@@ -231,59 +256,72 @@ export default function DashboardPage() {
                 = {cases} Kisten + {bottles} Flaschen
               </div>
 
-              <div className="px-2 border rounded select-none touch-manipulation"
+              {/* STEPPER + BUTTON */}
+              <div className="flex items-center gap-2 pt-3">
+
+                <div className="flex items-center border rounded-lg overflow-hidden">
+
+                  <button
+                    onClick={() => decrement(d.id)}
+                    className="px-3 py-1 bg-gray-100 active:bg-gray-200 select-none"
                     style={{
                       WebkitUserSelect: "none",
                       userSelect: "none",
                       WebkitTouchCallout: "none",
-                    }}>
-                <button
-                  onClick={() => decrement(d.id)}
-                  className="px-2 border rounded"
-                >
-                  –
-                </button>
+                    }}
+                  >
+                    –
+                  </button>
 
-                <input
-                  type="number"
-                  min="1"
-                  placeholder="Anzahl"
-                  value={draft[d.id] ?? ""}
-                  onChange={(e) => changeValue(d.id, e.target.value)}
-                  className="w-20 text-center border rounded p-1"
-                />
+                  <input
+                    type="number"
+                    min="1"
+                    placeholder="0"
+                    value={draft[d.id] ?? ""}
+                    onChange={(e) =>
+                      changeValue(d.id, e.target.value)
+                    }
+                    className="w-14 text-center outline-none border-x"
+                  />
 
-                <button
-                  onClick={() => {
-                    if (!longPressTriggered.current) increment(d.id);
-                  }}
-                  onMouseDown={() => handlePressStart(d)}
-                  onMouseUp={handlePressEnd}
-                  onTouchStart={(e) => {
-                    e.preventDefault();
-                    handlePressStart(d);
-                  }}
-                  onTouchEnd={(e) => {
-                    e.preventDefault();
-                    handlePressEnd();
-                  }}
-                  className="px-2 border rounded select-none touch-manipulation"
-                  style={{
-                    WebkitUserSelect: "none",
-                    userSelect: "none",
-                    WebkitTouchCallout: "none",
-                  }}
-                >
-                  +
-                </button>
+                  <button
+                    onClick={() => {
+                      if (!longPressTriggered.current)
+                        increment(d.id);
+                    }}
+                    onMouseDown={() =>
+                      handlePressStart(d)
+                    }
+                    onMouseUp={handlePressEnd}
+                    onTouchStart={(e) => {
+                      e.preventDefault();
+                      handlePressStart(d);
+                    }}
+                    onTouchEnd={(e) => {
+                      e.preventDefault();
+                      handlePressEnd();
+                    }}
+                    className="px-3 py-1 bg-gray-100 active:bg-gray-200 select-none"
+                    style={{
+                      WebkitUserSelect: "none",
+                      userSelect: "none",
+                      WebkitTouchCallout: "none",
+                    }}
+                  >
+                    +
+                  </button>
+
+                </div>
 
                 <button
                   onClick={() => openConfirm(d)}
-                  className="px-3 py-1 bg-green-600 text-white rounded"
+                  className="flex-1 bg-green-600 text-white py-1 rounded-lg active:scale-95 transition"
                 >
                   Buchen
                 </button>
+
               </div>
+
             </div>
           );
         })}
@@ -306,7 +344,9 @@ export default function DashboardPage() {
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setConfirmDrink(null)}
+                onClick={() =>
+                  setConfirmDrink(null)
+                }
                 className="px-3 py-1 border rounded"
               >
                 Abbrechen

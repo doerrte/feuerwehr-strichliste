@@ -30,21 +30,27 @@ export default function LagerPage() {
 
   const drinksWithQR = await Promise.all(
     data.map(async (drink: Drink) => {
-      const qrRes = await fetch(
-        `/api/drinks/${drink.id}/qr`
-      );
-      const qrData = await qrRes.json();
+      try {
+        const qrRes = await fetch(
+          `/api/drinks/${drink.id}/qr`
+        );
 
-      return {
-        ...drink,
-        qr: qrData.qr,
-      };
+        if (!qrRes.ok) return drink;
+
+        const qrData = await qrRes.json();
+
+        return {
+          ...drink,
+          qr: qrData.qr,
+        };
+      } catch {
+        return drink;
+      }
     })
   );
 
   setDrinks(drinksWithQR);
 }
-
   async function addDrink() {
     if (!newDrink.name) return;
 

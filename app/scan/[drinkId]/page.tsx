@@ -3,35 +3,34 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { verifySignature } from "@/lib/qr";
 
-interface PageProps {
-  params: {
-    id: string;
-  };
-  searchParams?: {
-    sig?: string;
-  };
-}
+export const dynamic = "force-dynamic";
 
 export default async function ScanPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
+  params: { drinkId: string };
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
-  const drinkId = Number(params.id);
+  // 🆔 ID aus URL
+  const drinkId = Number(params.drinkId);
 
   if (!drinkId || isNaN(drinkId)) {
     return <main className="p-6">❌ Ungültige Getränk-ID</main>;
   }
 
-  const signature = searchParams.sig;
+  // 🔐 Signatur aus Query
+  const signature =
+    typeof searchParams?.sig === "string"
+      ? searchParams.sig
+      : undefined;
 
+  // 🍪 Login prüfen
   const cookieStore = cookies();
   const userIdRaw = cookieStore.get("userId")?.value;
 
   if (!userIdRaw) {
-    const currentUrl = `/scan/${drinkId}?sig=${signature}`;
+    const currentUrl = `/scan/${drinkId}?sig=${signature ?? ""}`;
     redirect(`/login?redirect=${encodeURIComponent(currentUrl)}`);
   }
 
@@ -41,12 +40,14 @@ export default async function ScanPage({
     return <main className="p-6">❌ Ungültiger QR-Code</main>;
   }
 
+  // 🔒 Signatur prüfen
   const valid = verifySignature(drinkId, signature);
 
   if (!valid) {
     return <main className="p-6">❌ Ungültige QR-Signatur</main>;
   }
 
+  // 🥤 Getränk laden
   const drink = await prisma.drink.findUnique({
     where: { id: drinkId },
   });
@@ -56,9 +57,14 @@ export default async function ScanPage({
   }
 
   if (drink.stock <= 0) {
-    return <main className="p-6">⚠️ Kein Lagerbestand mehr</main>;
+    return (
+      <main className="p-6">
+        ⚠️ Kein Lagerbestand mehr vorhanden
+      </main>
+    );
   }
 
+  // 🔁 Buchung + Lagerabzug (Transaction)
   await prisma.$transaction([
     prisma.count.upsert({
       where: {

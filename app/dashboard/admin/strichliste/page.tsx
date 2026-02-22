@@ -105,6 +105,7 @@ export default function AdminStrichlistePage() {
     }
 
     setCounts(draftCounts);
+
     alert("Änderungen gespeichert ✅");
   }
 
@@ -116,6 +117,20 @@ export default function AdminStrichlistePage() {
         0
       )
     );
+  }
+
+  function resetAllDraft() {
+    if (!confirm("⚠️ Wirklich alle Getränke auf 0 setzen?"))
+      return;
+
+    const resetMap: Record<number, number> = {};
+
+    drinks.forEach((d) => {
+      resetMap[d.id] = 0;
+    });
+
+    setDraftCounts(resetMap);
+    setTotal(0);
   }
 
   return (
@@ -180,19 +195,30 @@ export default function AdminStrichlistePage() {
             </div>
 
             <div className="flex justify-between pt-4">
-              <button
-                onClick={cancelChanges}
-                className="border px-4 py-2 rounded"
-              >
-                Abbrechen
-              </button>
 
               <button
-                onClick={saveChanges}
-                className="bg-green-600 text-white px-4 py-2 rounded"
+                onClick={resetAllDraft}
+                className="bg-red-600 text-white px-4 py-2 rounded"
               >
-                Speichern
+                🔄 Reset
               </button>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelChanges}
+                  className="border px-4 py-2 rounded"
+                >
+                  Abbrechen
+                </button>
+
+                <button
+                  onClick={saveChanges}
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                >
+                  Speichern
+                </button>
+              </div>
+
             </div>
 
           </div>

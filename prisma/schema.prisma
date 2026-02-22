@@ -36,6 +36,7 @@ model Drink {
   name          String
   stock         Int
   unitsPerCase  Int
+  active        Boolean  @default(true)
   counts        Count[]
   logs          CountLog[]
 }

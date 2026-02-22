@@ -7,18 +7,24 @@ async function requireAdmin() {
     cookies().get("userId")?.value
   );
 
-  if (!userId) return false;
+  if (!userId) return null;
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
   });
 
-  return user?.role === "ADMIN";
+  if (!user || user.role !== "ADMIN" || !user.active) {
+    return null;
+  }
+
+  return user;
 }
 
 export async function POST(req: Request) {
   try {
-    if (!(await requireAdmin())) {
+    const admin = await requireAdmin();
+
+    if (!admin) {
       return NextResponse.json(
         { error: "Nicht erlaubt" },
         { status: 403 }
@@ -35,24 +41,51 @@ export async function POST(req: Request) {
       );
     }
 
-    if (action === "delete") {
-      // 🔥 zuerst alle Relations löschen
-
-      await prisma.count.deleteMany({
-        where: { userId },
+    const targetUser =
+      await prisma.user.findUnique({
+        where: { id: Number(userId) },
       });
 
-      await prisma.countLog.deleteMany({
-        where: {
-          OR: [
-            { userId },
-            { adminId: userId },
-          ],
-        },
-      });
+    if (!targetUser) {
+      return NextResponse.json(
+        { error: "Benutzer nicht gefunden" },
+        { status: 404 }
+      );
+    }
 
-      await prisma.user.delete({
-        where: { id: userId },
+    /* =========================
+       DEAKTIVIEREN
+    ========================= */
+    if (action === "deactivate") {
+
+      if (admin.id === targetUser.id) {
+        return NextResponse.json(
+          { error: "Du kannst dich nicht selbst deaktivieren." },
+          { status: 400 }
+        );
+      }
+
+      // mindestens 1 aktiver Admin muss bleiben
+      if (targetUser.role === "ADMIN") {
+        const activeAdmins =
+          await prisma.user.count({
+            where: {
+              role: "ADMIN",
+              active: true,
+            },
+          });
+
+        if (activeAdmins <= 1) {
+          return NextResponse.json(
+            { error: "Mindestens ein aktiver Admin muss bleiben." },
+            { status: 400 }
+          );
+        }
+      }
+
+      await prisma.user.update({
+        where: { id: targetUser.id },
+        data: { active: false },
       });
 
       return NextResponse.json({
@@ -60,9 +93,77 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({
-      error: "Unbekannte Aktion",
-    });
+    /* =========================
+       REAKTIVIEREN
+    ========================= */
+    if (action === "activate") {
+
+      await prisma.user.update({
+        where: { id: targetUser.id },
+        data: { active: true },
+      });
+
+      return NextResponse.json({
+        success: true,
+      });
+    }
+
+    /* =========================
+       LÖSCHEN (Hard Delete)
+    ========================= */
+    if (action === "delete") {
+
+      if (admin.id === targetUser.id) {
+        return NextResponse.json(
+          { error: "Du kannst dich nicht selbst löschen." },
+          { status: 400 }
+        );
+      }
+
+      if (targetUser.role === "ADMIN") {
+        const activeAdmins =
+          await prisma.user.count({
+            where: {
+              role: "ADMIN",
+              active: true,
+            },
+          });
+
+        if (activeAdmins <= 1) {
+          return NextResponse.json(
+            { error: "Mindestens ein aktiver Admin muss bleiben." },
+            { status: 400 }
+          );
+        }
+      }
+
+      // erst abhängige Daten löschen
+      await prisma.count.deleteMany({
+        where: { userId: targetUser.id },
+      });
+
+      await prisma.countLog.deleteMany({
+        where: {
+          OR: [
+            { userId: targetUser.id },
+            { adminId: targetUser.id },
+          ],
+        },
+      });
+
+      await prisma.user.delete({
+        where: { id: targetUser.id },
+      });
+
+      return NextResponse.json({
+        success: true,
+      });
+    }
+
+    return NextResponse.json(
+      { error: "Unbekannte Aktion" },
+      { status: 400 }
+    );
 
   } catch (error) {
     console.error(

@@ -1,13 +1,18 @@
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-async function requireAdmin() {
-  const userId = Number(
-    cookies().get("userId")?.value
-  );
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-  if (!userId) return null;
+/* ===============================
+   🔐 Admin prüfen
+================================= */
+async function requireAdmin() {
+  const userIdRaw = cookies().get("userId")?.value;
+  if (!userIdRaw) return null;
+
+  const userId = Number(userIdRaw);
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -17,22 +22,26 @@ async function requireAdmin() {
     return null;
   }
 
-  return user;
+  return userId;
 }
 
+/* ===============================
+   👤 User verwalten
+================================= */
 export async function POST(req: Request) {
   try {
-    const admin = await requireAdmin();
+    const adminId = await requireAdmin();
 
-    if (!admin) {
+    if (!adminId) {
       return NextResponse.json(
         { error: "Nicht erlaubt" },
         { status: 403 }
       );
     }
 
-    const { userId, action } =
-      await req.json();
+    const body = await req.json();
+    const userId = Number(body.userId);
+    const action = body.action;
 
     if (!userId || !action) {
       return NextResponse.json(
@@ -41,10 +50,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const targetUser =
-      await prisma.user.findUnique({
-        where: { id: Number(userId) },
-      });
+    const targetUser = await prisma.user.findUnique({
+      where: { id: userId },
+    });
 
     if (!targetUser) {
       return NextResponse.json(
@@ -53,38 +61,49 @@ export async function POST(req: Request) {
       );
     }
 
-    /* =========================
-       DEAKTIVIEREN
-    ========================= */
-    if (action === "deactivate") {
+    /* ===============================
+       🚫 Sich selbst deaktivieren?
+    ================================= */
+    if (
+      action === "deactivate" &&
+      userId === adminId
+    ) {
+      return NextResponse.json(
+        { error: "Du kannst dich nicht selbst deaktivieren." },
+        { status: 400 }
+      );
+    }
 
-      if (admin.id === targetUser.id) {
+    /* ===============================
+       🚫 Letzten Admin deaktivieren?
+    ================================= */
+    if (
+      action === "deactivate" &&
+      targetUser.role === "ADMIN"
+    ) {
+      const activeAdmins =
+        await prisma.user.count({
+          where: {
+            role: "ADMIN",
+            active: true,
+          },
+        });
+
+      if (activeAdmins <= 1) {
         return NextResponse.json(
-          { error: "Du kannst dich nicht selbst deaktivieren." },
+          { error: "Mindestens ein aktiver Admin muss bleiben." },
           { status: 400 }
         );
       }
+    }
 
-      // mindestens 1 aktiver Admin muss bleiben
-      if (targetUser.role === "ADMIN") {
-        const activeAdmins =
-          await prisma.user.count({
-            where: {
-              role: "ADMIN",
-              active: true,
-            },
-          });
+    /* ===============================
+       🔄 Aktionen
+    ================================= */
 
-        if (activeAdmins <= 1) {
-          return NextResponse.json(
-            { error: "Mindestens ein aktiver Admin muss bleiben." },
-            { status: 400 }
-          );
-        }
-      }
-
+    if (action === "deactivate") {
       await prisma.user.update({
-        where: { id: targetUser.id },
+        where: { id: userId },
         data: { active: false },
       });
 
@@ -93,13 +112,9 @@ export async function POST(req: Request) {
       });
     }
 
-    /* =========================
-       REAKTIVIEREN
-    ========================= */
     if (action === "activate") {
-
       await prisma.user.update({
-        where: { id: targetUser.id },
+        where: { id: userId },
         data: { active: true },
       });
 
@@ -108,51 +123,20 @@ export async function POST(req: Request) {
       });
     }
 
-    /* =========================
-       LÖSCHEN (Hard Delete)
-    ========================= */
     if (action === "delete") {
-
-      if (admin.id === targetUser.id) {
-        return NextResponse.json(
-          { error: "Du kannst dich nicht selbst löschen." },
-          { status: 400 }
-        );
-      }
-
-      if (targetUser.role === "ADMIN") {
-        const activeAdmins =
-          await prisma.user.count({
-            where: {
-              role: "ADMIN",
-              active: true,
-            },
-          });
-
-        if (activeAdmins <= 1) {
-          return NextResponse.json(
-            { error: "Mindestens ein aktiver Admin muss bleiben." },
-            { status: 400 }
-          );
-        }
-      }
-
-      // erst abhängige Daten löschen
+      // Counts löschen
       await prisma.count.deleteMany({
-        where: { userId: targetUser.id },
+        where: { userId },
       });
 
+      // Logs löschen
       await prisma.countLog.deleteMany({
-        where: {
-          OR: [
-            { userId: targetUser.id },
-            { adminId: targetUser.id },
-          ],
-        },
+        where: { userId },
       });
 
+      // User löschen
       await prisma.user.delete({
-        where: { id: targetUser.id },
+        where: { id: userId },
       });
 
       return NextResponse.json({
@@ -164,12 +148,8 @@ export async function POST(req: Request) {
       { error: "Unbekannte Aktion" },
       { status: 400 }
     );
-
   } catch (error) {
-    console.error(
-      "USER MANAGE ERROR:",
-      error
-    );
+    console.error("USER MANAGE ERROR:", error);
 
     return NextResponse.json(
       { error: "Serverfehler" },

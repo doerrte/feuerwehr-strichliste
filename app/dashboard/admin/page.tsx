@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 type User = {
   id: number;
@@ -12,163 +11,148 @@ type User = {
 };
 
 export default function AdminPage() {
-  const router = useRouter();
-
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  // ➕ Neues Mitglied
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState<"USER" | "ADMIN">("USER");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     loadUsers();
   }, []);
 
   async function loadUsers() {
-    try {
-      const res = await fetch("/api/admin/users");
-      if (!res.ok) return;
-
-      const data = await res.json();
-      setUsers(data);
-    } catch (err) {
-      console.error("LOAD USERS ERROR:", err);
-    } finally {
-      setLoading(false);
-    }
+    const res = await fetch("/api/admin/users");
+    const data = await res.json();
+    setUsers(data);
   }
 
-  async function createUser() {
-    if (!name.trim() || !phone.trim() || !password.trim()) {
-      alert("Bitte alle Felder ausfüllen");
-      return;
-    }
+  async function manageUser(
+    userId: number,
+    action: "activate" | "deactivate" | "delete"
+  ) {
+    const confirmText =
+      action === "delete"
+        ? "Benutzer wirklich löschen?"
+        : action === "deactivate"
+        ? "Benutzer deaktivieren?"
+        : "Benutzer aktivieren?";
 
-    const res = await fetch("/api/admin/users", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        name,
-        phone,
-        password,
-        role,
-      }),
-    });
+    if (!confirm(confirmText)) return;
+
+    setLoading(true);
+
+    const res = await fetch(
+      "/api/admin/users/manage",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          userId,
+          action,
+        }),
+      }
+    );
+
+    const data = await res.json();
 
     if (!res.ok) {
-      alert("Fehler beim Anlegen");
+      alert(data.error || "Fehler");
+      setLoading(false);
       return;
     }
 
-    // Reset
-    setName("");
-    setPhone("");
-    setPassword("");
-    setRole("USER");
-
-    loadUsers();
-  }
-
-  if (loading) {
-    return <main className="p-6">Lade Benutzer...</main>;
+    await loadUsers();
+    setLoading(false);
   }
 
   return (
-    <main className="p-6 space-y-8">
+    <main className="p-6 space-y-6">
       <h1 className="text-xl font-bold">
         👥 Benutzerverwaltung
       </h1>
 
-      {/* ➕ Neuer Benutzer */}
-      <section className="bg-white p-4 rounded-xl shadow space-y-3">
-        <h2 className="font-medium">
-          ➕ Neuen Benutzer anlegen
-        </h2>
-
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="text"
-          placeholder="Telefon"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-
-        <input
-          type="password"
-          placeholder="Start-Passwort"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full border p-2 rounded"
-        />
-
-        <select
-          value={role}
-          onChange={(e) =>
-            setRole(e.target.value as "USER" | "ADMIN")
-          }
-          className="w-full border p-2 rounded"
-        >
-          <option value="USER">Benutzer</option>
-          <option value="ADMIN">Admin</option>
-        </select>
-
-        <button
-          onClick={createUser}
-          className="w-full bg-green-600 text-white py-2 rounded"
-        >
-          Benutzer anlegen
-        </button>
-      </section>
-
-      {/* 👥 Bestehende Benutzer */}
-      <section className="space-y-3">
-        <h2 className="font-medium">
-          Bestehende Benutzer
-        </h2>
-
-        {users.map((u) => (
+      <div className="space-y-4">
+        {users.map((user) => (
           <div
-            key={u.id}
-            onClick={() =>
-              router.push(`/dashboard/admin/users/${u.id}`)
-            }
-            className={`border p-3 rounded bg-white shadow cursor-pointer hover:bg-gray-50 transition ${
-              !u.active ? "opacity-50" : ""
-            }`}
+            key={user.id}
+            className="bg-white p-4 rounded shadow flex justify-between items-center"
           >
-            <div className="font-medium">
-              {u.name}
-            </div>
-
-            <div className="text-sm text-gray-500">
-              {u.phone}
-            </div>
-
-            <div className="text-xs text-gray-600">
-              Rolle: {u.role}
-            </div>
-
-            {!u.active && (
-              <div className="text-xs text-red-500">
-                Deaktiviert
+            <div>
+              <div className="font-semibold">
+                {user.name}
               </div>
-            )}
+
+              <div className="text-sm text-gray-600">
+                {user.phone}
+              </div>
+
+              <div className="text-xs mt-1">
+                Rolle:{" "}
+                <span className="font-medium">
+                  {user.role}
+                </span>
+              </div>
+
+              <div className="text-xs mt-1">
+                Status:{" "}
+                {user.active ? (
+                  <span className="text-green-600 font-medium">
+                    Aktiv
+                  </span>
+                ) : (
+                  <span className="text-red-600 font-medium">
+                    Deaktiviert
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              {user.active ? (
+                <button
+                  disabled={loading}
+                  onClick={() =>
+                    manageUser(
+                      user.id,
+                      "deactivate"
+                    )
+                  }
+                  className="bg-yellow-500 text-white px-3 py-1 rounded text-sm"
+                >
+                  Deaktivieren
+                </button>
+              ) : (
+                <button
+                  disabled={loading}
+                  onClick={() =>
+                    manageUser(
+                      user.id,
+                      "activate"
+                    )
+                  }
+                  className="bg-green-600 text-white px-3 py-1 rounded text-sm"
+                >
+                  Aktivieren
+                </button>
+              )}
+
+              <button
+                disabled={loading}
+                onClick={() =>
+                  manageUser(
+                    user.id,
+                    "delete"
+                  )
+                }
+                className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+              >
+                Löschen
+              </button>
+            </div>
           </div>
         ))}
-      </section>
+      </div>
     </main>
   );
 }

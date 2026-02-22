@@ -2,275 +2,228 @@
 
 import { useEffect, useState } from "react";
 
+type User = {
+  id: number;
+  name: string;
+  active: boolean;
+};
+
 type Drink = {
   id: number;
   name: string;
-  stock: number;
-  unitsPerCase: number;
-  qr?: string;
 };
 
-export default function LagerPage() {
-  const [drinks, setDrinks] = useState<Drink[]>([]);
+type Count = {
+  drinkId: number;
+  amount: number;
+};
 
-  const [newDrink, setNewDrink] = useState({
-    name: "",
-    unitsPerCase: 12,
-    cases: 0,
-    singleBottles: 0,
-  });
+export default function AdminStrichlistePage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [drinks, setDrinks] = useState<Drink[]>([]);
+  const [counts, setCounts] = useState<Record<number, number>>({});
+  const [draftCounts, setDraftCounts] = useState<Record<number, number>>({});
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    load();
+    loadUsers();
+    loadDrinks();
   }, []);
 
-  async function load() {
-    const res = await fetch("/api/drinks", {
-      cache: "no-store",
-    });
-
+  async function loadUsers() {
+    const res = await fetch("/api/admin/users");
     const data = await res.json();
+    setUsers(data.filter((u: User) => u.active));
+  }
 
-    const drinksWithQR = await Promise.all(
-      data.map(async (drink: Drink) => {
-        try {
-          const qrRes = await fetch(
-            `/api/drinks/${drink.id}/qr`,
-            { cache: "no-store" }
-          );
+  async function loadDrinks() {
+    const res = await fetch("/api/drinks");
+    const data = await res.json();
+    setDrinks(data);
+  }
 
-          if (!qrRes.ok) return drink;
+  async function openUser(user: User) {
+    setSelectedUser(user);
 
-          const qrData = await qrRes.json();
-
-          return {
-            ...drink,
-            qr: qrData.qr,
-          };
-        } catch {
-          return drink;
-        }
-      })
+    const res = await fetch(
+      `/api/admin/counts?userId=${user.id}`
     );
 
-    setDrinks(drinksWithQR);
-  }
+    const data: Count[] = await res.json();
 
-  async function addDrink() {
-    if (!newDrink.name) return;
+    const map: Record<number, number> = {};
+    let sum = 0;
 
-    await fetch("/api/drinks", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(newDrink),
+    data.forEach((c) => {
+      map[c.drinkId] = c.amount;
+      sum += c.amount;
     });
 
-    setNewDrink({
-      name: "",
-      unitsPerCase: 12,
-      cases: 0,
-      singleBottles: 0,
-    });
-
-    load();
+    setCounts(map);
+    setDraftCounts(map);
+    setTotal(sum);
   }
 
-  async function refill(id: number) {
-    const amount = Number(
-      prompt("Wie viele Flaschen hinzufügen?")
+  function changeDraft(drinkId: number, value: number) {
+    const updated = {
+      ...draftCounts,
+      [drinkId]: value,
+    };
+
+    setDraftCounts(updated);
+
+    const newTotal = Object.values(updated).reduce(
+      (a, b) => a + b,
+      0
     );
 
-    if (!amount) return;
-
-    const drink = drinks.find((d) => d.id === id);
-    if (!drink) return;
-
-    await fetch(`/api/drinks/${id}`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        stock: drink.stock + amount,
-      }),
-    });
-
-    load();
+    setTotal(newTotal);
   }
 
-  async function deleteDrink(id: number) {
-    if (!confirm("Wirklich löschen?")) return;
+  async function saveChanges() {
+    if (!selectedUser) return;
 
-    await fetch(`/api/drinks/${id}`, {
-      method: "DELETE",
+    if (!confirm("Änderungen speichern?")) return;
+
+    for (const drinkId of Object.keys(draftCounts)) {
+      const id = Number(drinkId);
+
+      if (draftCounts[id] !== counts[id]) {
+        await fetch("/api/admin/counts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: selectedUser.id,
+            drinkId: id,
+            amount: draftCounts[id],
+          }),
+        });
+      }
+    }
+
+    setCounts(draftCounts);
+
+    alert("Änderungen gespeichert ✅");
+  }
+
+  function cancelChanges() {
+    setDraftCounts(counts);
+    setTotal(
+      Object.values(counts).reduce(
+        (a, b) => a + b,
+        0
+      )
+    );
+  }
+
+  function resetAllDraft() {
+    if (!confirm("⚠️ Wirklich alle Getränke auf 0 setzen?"))
+      return;
+
+    const resetMap: Record<number, number> = {};
+
+    drinks.forEach((d) => {
+      resetMap[d.id] = 0;
     });
 
-    load();
+    setDraftCounts(resetMap);
+    setTotal(0);
   }
 
   return (
-    <main className="p-6 space-y-8">
+    <main className="p-6 space-y-6">
       <h1 className="text-xl font-bold">
-        📦 Lagerverwaltung
+        📊 Admin – Strichliste
       </h1>
 
-      {/* Neues Getränk */}
-      <section className="bg-white p-4 rounded shadow space-y-4">
-        <h2 className="font-semibold">
-          Neues Getränk hinzufügen
-        </h2>
-
-        <div className="space-y-3">
-          <div>
-            <label className="block text-sm font-medium">
-              Getränkename
-            </label>
-            <input
-              value={newDrink.name}
-              onChange={(e) =>
-                setNewDrink({
-                  ...newDrink,
-                  name: e.target.value,
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">
-              Flaschen pro Kasten
-            </label>
-            <input
-              type="number"
-              value={newDrink.unitsPerCase}
-              onChange={(e) =>
-                setNewDrink({
-                  ...newDrink,
-                  unitsPerCase: Number(e.target.value),
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">
-              Anzahl Kästen
-            </label>
-            <input
-              type="number"
-              value={newDrink.cases}
-              onChange={(e) =>
-                setNewDrink({
-                  ...newDrink,
-                  cases: Number(e.target.value),
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium">
-              Zusätzliche Einzelflaschen
-            </label>
-            <input
-              type="number"
-              value={newDrink.singleBottles}
-              onChange={(e) =>
-                setNewDrink({
-                  ...newDrink,
-                  singleBottles: Number(e.target.value),
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
-          </div>
-
-          <div className="text-sm text-gray-600">
-            Gesamtbestand:{" "}
-            {newDrink.unitsPerCase *
-              newDrink.cases +
-              newDrink.singleBottles}{" "}
-            Flaschen
-          </div>
-
-          <button
-            onClick={addDrink}
-            className="bg-green-600 text-white px-4 py-2 rounded"
+      <section className="space-y-3">
+        {users.map((u) => (
+          <div
+            key={u.id}
+            onClick={() => openUser(u)}
+            className="border p-3 rounded bg-white shadow cursor-pointer hover:bg-gray-50"
           >
-            Getränk erstellen
-          </button>
-        </div>
+            {u.name}
+          </div>
+        ))}
       </section>
 
-      {/* Bestehende Getränke */}
-      <section className="space-y-4">
-        {drinks.map((drink) => {
-          const cases =
-            drink.unitsPerCase > 0
-              ? Math.floor(
-                  drink.stock / drink.unitsPerCase
-                )
-              : 0;
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow p-6 space-y-4">
 
-          const bottles =
-            drink.unitsPerCase > 0
-              ? drink.stock % drink.unitsPerCase
-              : drink.stock;
-
-          return (
-            <div
-              key={drink.id}
-              className="bg-white p-4 rounded shadow space-y-2"
-            >
-              <div className="font-bold">
-                {drink.name}
-              </div>
-
-              <div className="text-sm">
-                Bestand: {drink.stock} Flaschen
-              </div>
-
-              <div className="text-xs text-gray-500">
-                = {cases} Kisten + {bottles} Flaschen
-              </div>
-
-              {/* QR Code */}
-              {drink.qr && (
-                <img
-                  src={drink.qr}
-                  alt="QR Code"
-                  className="w-32 mt-3"
-                />
-              )}
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  onClick={() =>
-                    refill(drink.id)
-                  }
-                  className="bg-blue-600 text-white px-3 py-1 rounded"
-                >
-                  Auffüllen
-                </button>
-
-                <button
-                  onClick={() =>
-                    deleteDrink(drink.id)
-                  }
-                  className="bg-red-600 text-white px-3 py-1 rounded"
-                >
-                  Löschen
-                </button>
-              </div>
+            <div className="flex justify-between items-center">
+              <h2 className="text-lg font-bold">
+                Strichliste von {selectedUser.name}
+              </h2>
+              <button
+                onClick={() => setSelectedUser(null)}
+                className="text-red-600"
+              >
+                ✕
+              </button>
             </div>
-          );
-        })}
-      </section>
+
+            <div className="text-sm text-gray-600">
+              Gesamt: <strong>{total}</strong>
+            </div>
+
+            <div className="space-y-3 max-h-80 overflow-y-auto">
+              {drinks.map((d) => (
+                <div
+                  key={d.id}
+                  className="flex justify-between items-center border p-2 rounded"
+                >
+                  <span>{d.name}</span>
+
+                  <input
+                    type="number"
+                    value={draftCounts[d.id] ?? 0}
+                    onChange={(e) =>
+                      changeDraft(
+                        d.id,
+                        Number(e.target.value)
+                      )
+                    }
+                    className="w-20 text-center border rounded p-1"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex justify-between pt-4">
+
+              <button
+                onClick={resetAllDraft}
+                className="bg-red-600 text-white px-4 py-2 rounded"
+              >
+                🔄 Reset
+              </button>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelChanges}
+                  className="border px-4 py-2 rounded"
+                >
+                  Abbrechen
+                </button>
+
+                <button
+                  onClick={saveChanges}
+                  className="bg-green-600 text-white px-4 py-2 rounded"
+                >
+                  Speichern
+                </button>
+              </div>
+
+            </div>
+
+          </div>
+        </div>
+      )}
     </main>
   );
 }

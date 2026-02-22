@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 async function requireAdmin() {
   const userId = Number(cookies().get("userId")?.value);
   if (!userId) return false;
@@ -10,39 +13,61 @@ async function requireAdmin() {
     where: { id: userId },
   });
 
-  if (!user || user.role !== "ADMIN") return false;
-
-  return true;
+  return user?.role === "ADMIN";
 }
 
 /* =========================
-   PATCH – Aktivieren/Deaktivieren
+   PATCH – Getränk bearbeiten
 ========================= */
 export async function PATCH(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  const isAdmin = await requireAdmin();
-  if (!isAdmin) {
+  if (!(await requireAdmin())) {
     return NextResponse.json(
       { error: "Nicht erlaubt" },
       { status: 403 }
     );
   }
 
-  const id = Number(params.id);
-  const { active } = await req.json();
+  const drinkId = Number(params.id);
+  const { name, stock, unitsPerCase } =
+    await req.json();
 
-  if (typeof active !== "boolean") {
+  const updated = await prisma.drink.update({
+    where: { id: drinkId },
+    data: {
+      name,
+      stock,
+      unitsPerCase,
+    },
+  });
+
+  return NextResponse.json(updated);
+}
+
+/* =========================
+   DELETE – Getränk löschen
+========================= */
+export async function DELETE(
+  req: Request,
+  { params }: { params: { id: string } }
+) {
+  if (!(await requireAdmin())) {
     return NextResponse.json(
-      { error: "Ungültiger Wert" },
-      { status: 400 }
+      { error: "Nicht erlaubt" },
+      { status: 403 }
     );
   }
 
-  await prisma.drink.update({
-    where: { id },
-    data: { active },
+  const drinkId = Number(params.id);
+
+  await prisma.count.deleteMany({
+    where: { drinkId },
+  });
+
+  await prisma.drink.delete({
+    where: { id: drinkId },
   });
 
   return NextResponse.json({ success: true });

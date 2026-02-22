@@ -12,6 +12,13 @@ export async function GET(
 ) {
   const drinkId = Number(params.id);
 
+  if (!drinkId) {
+    return NextResponse.json(
+      { error: "Ungültige ID" },
+      { status: 400 }
+    );
+  }
+
   const drink = await prisma.drink.findUnique({
     where: { id: drinkId },
   });
@@ -29,10 +36,9 @@ export async function GET(
 
   const signature = createSignature(drinkId);
 
-  const url =
-    `${baseUrl}/scan/${drinkId}?sig=${signature}`;
+  const scanUrl = `${baseUrl}/scan/${drinkId}?sig=${signature}`;
 
-  const qr = await QRCode.toDataURL(url);
+  const qr = await QRCode.toDataURL(scanUrl);
 
   return NextResponse.json({ qr });
 }

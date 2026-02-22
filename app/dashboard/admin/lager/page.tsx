@@ -7,24 +7,28 @@ type Drink = {
   name: string;
   stock: number;
   unitsPerCase: number;
-  qr?: string;
+  minStock: number;
 };
 
 export default function LagerPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [refillDrink, setRefillDrink] = useState<Drink | null>(null);
+  const [refillDrink, setRefillDrink] =
+    useState<Drink | null>(null);
 
-  const [refillData, setRefillData] = useState({
-    cases: 0,
-    singleBottles: 0,
-  });
+  const [refillData, setRefillData] =
+    useState({
+      cases: 0,
+      singleBottles: 0,
+    });
 
-  const [newDrink, setNewDrink] = useState({
-    name: "",
-    unitsPerCase: 12,
-    cases: 0,
-    singleBottles: 0,
-  });
+  const [newDrink, setNewDrink] =
+    useState({
+      name: "",
+      unitsPerCase: 12,
+      cases: 0,
+      singleBottles: 0,
+      minStock: 10,
+    });
 
   useEffect(() => {
     load();
@@ -41,7 +45,9 @@ export default function LagerPage() {
 
     await fetch("/api/drinks", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify(newDrink),
     });
 
@@ -50,6 +56,7 @@ export default function LagerPage() {
       unitsPerCase: 12,
       cases: 0,
       singleBottles: 0,
+      minStock: 10,
     });
 
     load();
@@ -57,32 +64,45 @@ export default function LagerPage() {
 
   function openRefill(drink: Drink) {
     setRefillDrink(drink);
-    setRefillData({ cases: 0, singleBottles: 0 });
+    setRefillData({
+      cases: 0,
+      singleBottles: 0,
+    });
   }
 
   async function confirmRefill() {
     if (!refillDrink) return;
 
     const added =
-      refillData.cases * refillDrink.unitsPerCase +
+      refillData.cases *
+        refillDrink.unitsPerCase +
       refillData.singleBottles;
 
     if (added <= 0) return;
 
-    await fetch(`/api/drinks/${refillDrink.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        stock: refillDrink.stock + added,
-      }),
-    });
+    await fetch(
+      `/api/drinks/${refillDrink.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          stock:
+            refillDrink.stock +
+            added,
+        }),
+      }
+    );
 
     setRefillDrink(null);
     load();
   }
 
   async function deleteDrink(id: number) {
-    if (!confirm("Wirklich löschen?")) return;
+    if (!confirm("Wirklich löschen?"))
+      return;
 
     await fetch(`/api/drinks/${id}`, {
       method: "DELETE",
@@ -105,80 +125,73 @@ export default function LagerPage() {
 
         <div className="space-y-3">
 
-          <div>
-            <label className="block text-sm font-medium">
-              Getränkename
-            </label>
-            <input
-              value={newDrink.name}
-              onChange={(e) =>
-                setNewDrink({
-                  ...newDrink,
-                  name: e.target.value,
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
-          </div>
+          <input
+            placeholder="Getränkename"
+            value={newDrink.name}
+            onChange={(e) =>
+              setNewDrink({
+                ...newDrink,
+                name: e.target.value,
+              })
+            }
+            className="border p-2 rounded w-full"
+          />
 
-          <div>
-            <label className="block text-sm font-medium">
-              Flaschen pro Kasten
-            </label>
-            <input
-              type="number"
-              value={newDrink.unitsPerCase}
-              onChange={(e) =>
-                setNewDrink({
-                  ...newDrink,
-                  unitsPerCase: Number(e.target.value),
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
-          </div>
+          <input
+            type="number"
+            placeholder="Flaschen pro Kasten"
+            value={newDrink.unitsPerCase}
+            onChange={(e) =>
+              setNewDrink({
+                ...newDrink,
+                unitsPerCase:
+                  Number(e.target.value),
+              })
+            }
+            className="border p-2 rounded w-full"
+          />
 
-          <div>
-            <label className="block text-sm font-medium">
-              Anzahl Kästen
-            </label>
-            <input
-              type="number"
-              value={newDrink.cases}
-              onChange={(e) =>
-                setNewDrink({
-                  ...newDrink,
-                  cases: Number(e.target.value),
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
-          </div>
+          <input
+            type="number"
+            placeholder="Anzahl Kästen"
+            value={newDrink.cases}
+            onChange={(e) =>
+              setNewDrink({
+                ...newDrink,
+                cases:
+                  Number(e.target.value),
+              })
+            }
+            className="border p-2 rounded w-full"
+          />
 
-          <div>
-            <label className="block text-sm font-medium">
-              Zusätzliche Einzelflaschen
-            </label>
-            <input
-              type="number"
-              value={newDrink.singleBottles}
-              onChange={(e) =>
-                setNewDrink({
-                  ...newDrink,
-                  singleBottles: Number(e.target.value),
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
-          </div>
+          <input
+            type="number"
+            placeholder="Einzelflaschen"
+            value={newDrink.singleBottles}
+            onChange={(e) =>
+              setNewDrink({
+                ...newDrink,
+                singleBottles:
+                  Number(e.target.value),
+              })
+            }
+            className="border p-2 rounded w-full"
+          />
 
-          <div className="text-sm text-gray-600">
-            Gesamtbestand:{" "}
-            {newDrink.unitsPerCase *
-              newDrink.cases +
-              newDrink.singleBottles}{" "}
-            Flaschen
-          </div>
+          <input
+            type="number"
+            placeholder="Mindestbestand (Warnung)"
+            value={newDrink.minStock}
+            onChange={(e) =>
+              setNewDrink({
+                ...newDrink,
+                minStock:
+                  Number(e.target.value),
+              })
+            }
+            className="border p-2 rounded w-full"
+          />
 
           <button
             onClick={addDrink}
@@ -194,37 +207,71 @@ export default function LagerPage() {
       <section className="space-y-4">
         {drinks.map((drink) => {
           const cases =
-            drink.unitsPerCase > 0
-              ? Math.floor(
-                  drink.stock / drink.unitsPerCase
-                )
-              : 0;
+            Math.floor(
+              drink.stock /
+                drink.unitsPerCase
+            );
 
           const bottles =
-            drink.unitsPerCase > 0
-              ? drink.stock % drink.unitsPerCase
-              : drink.stock;
+            drink.stock %
+            drink.unitsPerCase;
+
+          const isLow =
+            drink.stock <=
+            drink.minStock;
+
+          const isEmpty =
+            drink.stock === 0;
 
           return (
             <div
               key={drink.id}
               className="bg-white p-4 rounded shadow space-y-2"
             >
-              <div className="font-bold">
-                {drink.name}
+              <div className="flex justify-between items-center">
+                <div className="font-bold">
+                  {drink.name}
+                </div>
+
+                {isEmpty && (
+                  <span className="text-red-600 font-bold">
+                    🔴 Leer
+                  </span>
+                )}
+
+                {!isEmpty && isLow && (
+                  <span className="text-yellow-600 font-bold">
+                    🟡 Niedrig
+                  </span>
+                )}
               </div>
 
-              <div className="text-sm">
+              <div
+                className={`text-sm font-medium ${
+                  isLow
+                    ? "text-red-600"
+                    : ""
+                }`}
+              >
                 Bestand: {drink.stock} Flaschen
               </div>
 
               <div className="text-xs text-gray-500">
-                = {cases} Kisten + {bottles} Flaschen
+                = {cases} Kisten +{" "}
+                {bottles} Flaschen
               </div>
+
+              {isLow && (
+                <div className="text-xs text-red-600 font-semibold">
+                  ⚠️ Mindestbestand unterschritten!
+                </div>
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => openRefill(drink)}
+                  onClick={() =>
+                    openRefill(drink)
+                  }
                   className="bg-blue-600 text-white px-3 py-1 rounded"
                 >
                   Auffüllen
@@ -249,50 +296,45 @@ export default function LagerPage() {
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
           <div className="bg-white p-6 rounded-xl shadow space-y-4 w-96">
 
-            <h2 className="font-bold text-lg">
-              Lager auffüllen – {refillDrink.name}
+            <h2 className="font-bold">
+              Auffüllen – {refillDrink.name}
             </h2>
 
-            <div className="text-sm text-gray-600">
-              Flaschen pro Kasten:{" "}
-              {refillDrink.unitsPerCase}
-            </div>
+            <input
+              type="number"
+              placeholder="Kästen"
+              value={refillData.cases}
+              onChange={(e) =>
+                setRefillData({
+                  ...refillData,
+                  cases:
+                    Number(
+                      e.target.value
+                    ),
+                })
+              }
+              className="border p-2 rounded w-full"
+            />
 
-            <div>
-              <label className="block text-sm">
-                Anzahl Kästen
-              </label>
-              <input
-                type="number"
-                value={refillData.cases}
-                onChange={(e) =>
-                  setRefillData({
-                    ...refillData,
-                    cases: Number(e.target.value),
-                  })
-                }
-                className="border p-2 rounded w-full"
-              />
-            </div>
+            <input
+              type="number"
+              placeholder="Einzelflaschen"
+              value={
+                refillData.singleBottles
+              }
+              onChange={(e) =>
+                setRefillData({
+                  ...refillData,
+                  singleBottles:
+                    Number(
+                      e.target.value
+                    ),
+                })
+              }
+              className="border p-2 rounded w-full"
+            />
 
-            <div>
-              <label className="block text-sm">
-                Einzel-Flaschen
-              </label>
-              <input
-                type="number"
-                value={refillData.singleBottles}
-                onChange={(e) =>
-                  setRefillData({
-                    ...refillData,
-                    singleBottles: Number(e.target.value),
-                  })
-                }
-                className="border p-2 rounded w-full"
-              />
-            </div>
-
-            <div className="text-sm text-gray-600">
+            <div className="text-sm">
               Zuwachs:{" "}
               {refillData.cases *
                 refillDrink.unitsPerCase +

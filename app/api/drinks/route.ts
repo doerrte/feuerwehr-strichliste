@@ -20,11 +20,25 @@ async function requireAdmin() {
    GET – Alle Getränke
 ========================= */
 export async function GET() {
-  const drinks = await prisma.drink.findMany({
-    orderBy: { name: "asc" },
-  });
+  try {
+    const drinks = await prisma.drink.findMany({
+      orderBy: { name: "asc" },
+      select: {
+        id: true,
+        name: true,
+        stock: true,
+        unitsPerCase: true,
+        minStock: true,
+      },
+    });
 
-  return NextResponse.json(drinks);
+    return NextResponse.json(drinks);
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Fehler beim Laden der Getränke" },
+      { status: 500 }
+    );
+  }
 }
 
 /* =========================
@@ -38,21 +52,24 @@ export async function POST(req: Request) {
     );
   }
 
-  const body = await req.json();
-
-  const name = body.name;
-  const unitsPerCase = Number(body.unitsPerCase ?? 0);
-  const cases = Number(body.cases ?? 0);
-  const singleBottles = Number(body.singleBottles ?? 0);
+  const {
+    name,
+    unitsPerCase,
+    cases,
+    singleBottles,
+    minStock,
+  } = await req.json();
 
   const totalStock =
-    unitsPerCase * cases + singleBottles;
+    Number(unitsPerCase) * Number(cases) +
+    Number(singleBottles);
 
   const drink = await prisma.drink.create({
     data: {
       name,
-      unitsPerCase,
+      unitsPerCase: Number(unitsPerCase),
       stock: totalStock,
+      minStock: Number(minStock) || 10,
     },
   });
 

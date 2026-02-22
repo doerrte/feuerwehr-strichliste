@@ -32,11 +32,11 @@ model User {
 }
 
 model Drink {
-  id            Int      @id @default(autoincrement())
+  id            Int     @id @default(autoincrement())
   name          String
   stock         Int
   unitsPerCase  Int
-  active        Boolean  @default(true)
+  minStock      Int     @default(10)
   counts        Count[]
   logs          CountLog[]
 }

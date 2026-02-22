@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
@@ -15,7 +14,7 @@ export async function POST(req: Request) {
     }
 
     const user = await prisma.user.findUnique({
-      where: { phone },   // ✅ Richtig!
+      where: { phone },
     });
 
     if (!user) {
@@ -27,7 +26,7 @@ export async function POST(req: Request) {
 
     if (!user.active) {
       return NextResponse.json(
-        { error: "Benutzer ist deaktiviert" },
+        { error: "Benutzer deaktiviert" },
         { status: 403 }
       );
     }
@@ -44,25 +43,20 @@ export async function POST(req: Request) {
       );
     }
 
-    const cookieStore = cookies();
+    const response = NextResponse.json({
+      redirect: user.hasSeenIntro
+        ? "/dashboard"
+        : "/intro",
+    });
 
-    cookieStore.set("userId", String(user.id), {
+    response.cookies.set("userId", String(user.id), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
     });
 
-    // 🔥 Intro Weiterleitung
-    if (!user.hasSeenIntro) {
-      return NextResponse.json({
-        redirect: "/intro",
-      });
-    }
-
-    return NextResponse.json({
-      redirect: "/dashboard",
-    });
+    return response;
 
   } catch (error) {
     console.error("LOGIN ERROR:", error);

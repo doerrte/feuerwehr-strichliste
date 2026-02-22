@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 type Drink = {
   id: number;
   name: string;
-  amount: number;
+  amount: number; // bereits getrunken
   stock: number;
   unitsPerCase: number;
 };
@@ -18,10 +18,6 @@ export default function DashboardPage() {
   const [name, setName] = useState("");
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [draft, setDraft] = useState<Record<number, number>>({});
-
-  // 🔥 Modal State
-  const [confirmDrink, setConfirmDrink] = useState<Drink | null>(null);
-  const [confirmAmount, setConfirmAmount] = useState<number>(0);
 
   useEffect(() => {
     init();
@@ -44,6 +40,7 @@ export default function DashboardPage() {
 
     const drinksRes = await fetch("/api/drinks/me", {
       credentials: "include",
+      cache: "no-store",
     });
 
     const data = await drinksRes.json();
@@ -58,24 +55,17 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
-  function change(drinkId: number, delta: number) {
-    setDraft((d) => ({
-      ...d,
-      [drinkId]: Math.max(0, (d[drinkId] ?? 0) + delta),
+  function change(drinkId: number, value: number) {
+    setDraft((prev) => ({
+      ...prev,
+      [drinkId]: value < 0 ? 0 : value,
     }));
   }
 
-  // 🔥 Klick auf "Bestätigen" öffnet nur Modal
-  function openConfirm(drink: Drink) {
-    const value = draft[drink.id];
-    if (!value) return;
+  async function confirmBooking(drink: Drink) {
+    const amount = draft[drink.id];
 
-    setConfirmDrink(drink);
-    setConfirmAmount(value);
-  }
-
-  async function confirmBooking() {
-    if (!confirmDrink) return;
+    if (!amount || amount <= 0) return;
 
     await fetch("/api/drinks/increment", {
       method: "POST",
@@ -84,25 +74,25 @@ export default function DashboardPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        drinkId: confirmDrink.id,
-        amount: confirmAmount,
+        drinkId: drink.id,
+        amount,
       }),
     });
 
-    setConfirmDrink(null);
-    setConfirmAmount(0);
-
-    init();
+    await init();
   }
 
   if (loading) {
     return <main className="p-6">Lade...</main>;
   }
 
-  const total = drinks.reduce((s, d) => s + d.amount, 0);
+  const total = drinks.reduce(
+    (sum, d) => sum + d.amount,
+    0
+  );
 
   return (
-    <main className="p-6 space-y-6">
+    <main className="p-6 space-y-6 pb-24">
 
       <h1 className="text-xl font-bold">
         Hallo {name} 👋
@@ -114,87 +104,91 @@ export default function DashboardPage() {
 
       <section className="bg-white p-4 rounded-xl shadow space-y-4">
         {drinks.map((d) => {
-          const stock = d.stock ?? 0;
-          const units = d.unitsPerCase || 1;
+          const stockCases =
+            d.unitsPerCase > 0
+              ? Math.floor(d.stock / d.unitsPerCase)
+              : 0;
 
-          const stockCases = Math.floor(d.stock / d.unitsPerCase);
-          const stockBottles = d.stock % d.unitsPerCase;
+          const stockBottles =
+            d.unitsPerCase > 0
+              ? d.stock % d.unitsPerCase
+              : d.stock;
 
           return (
-            <div key={d.id} className="border rounded p-4 space-y-2">
-              <div className="font-medium">{d.name}</div>
+            <div
+              key={d.id}
+              className="border rounded p-4 space-y-2"
+            >
+              <div className="font-medium">
+                {d.name}
+              </div>
 
               <div className="text-sm text-gray-600">
-                Bereits getrunken: {d.amount} Flaschen
+                Bereits getrunken: {d.amount}
               </div>
 
               <div className="text-xs text-gray-500">
-                Lagerbestand: {d.stock} Flaschen
-              </div>
-
-              <div className="text-xs text-gray-400">
-                = {stockCases} Kisten + {stockBottles} Flaschen
+                Lager: {stockCases} Kisten +{" "}
+                {stockBottles} Flaschen
               </div>
 
               <div className="flex gap-2 items-center pt-2">
+
                 <button
-                  onClick={() => change(d.id, 1)}
+                  onClick={() =>
+                    change(
+                      d.id,
+                      (draft[d.id] ?? 0) - 1
+                    )
+                  }
+                  className="px-2 border rounded"
+                >
+                  −
+                </button>
+
+                <input
+                  type="number"
+                  min={0}
+                  value={draft[d.id] ?? 0}
+                  onChange={(e) =>
+                    change(
+                      d.id,
+                      Number(e.target.value)
+                    )
+                  }
+                  className="w-16 text-center border rounded p-1"
+                />
+
+                <button
+                  onClick={() =>
+                    change(
+                      d.id,
+                      (draft[d.id] ?? 0) + 1
+                    )
+                  }
                   className="px-2 border rounded"
                 >
                   +
                 </button>
 
-                <input
-                  type="number"
-                  readOnly
-                  value={draft[d.id] ?? 0}
-                  className="w-14 text-center border rounded"
-                />
-
                 <button
-                  onClick={() => openConfirm(d)}
-                  className="px-3 py-1 bg-green-600 text-white rounded"
+                  onClick={() =>
+                    confirmBooking(d)
+                  }
+                  disabled={
+                    !draft[d.id] ||
+                    draft[d.id] <= 0
+                  }
+                  className="ml-auto px-3 py-1 bg-green-600 text-white rounded disabled:bg-gray-300"
                 >
-                  Bestätigen
+                  Buchen
                 </button>
+
               </div>
             </div>
           );
         })}
       </section>
-
-      {/* 🔥 Bestätigungs-Modal */}
-      {confirmDrink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl shadow space-y-4 w-80">
-            <h2 className="font-bold text-lg">
-              Buchung bestätigen
-            </h2>
-
-            <p className="text-sm">
-              Möchtest du wirklich{" "}
-              <strong>{confirmAmount}x {confirmDrink.name}</strong>{" "}
-              buchen?
-            </p>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setConfirmDrink(null)}
-                className="px-3 py-1 border rounded"
-              >
-                Abbrechen
-              </button>
-
-              <button
-                onClick={confirmBooking}
-                className="px-3 py-1 bg-green-600 text-white rounded"
-              >
-                Ja, buchen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

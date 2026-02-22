@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 type Drink = {
   id: number;
   name: string;
-  amount: number; // bereits getrunken
+  amount: number;
   stock: number;
   unitsPerCase: number;
 };
@@ -18,6 +18,12 @@ export default function DashboardPage() {
   const [name, setName] = useState("");
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [draft, setDraft] = useState<Record<number, number>>({});
+
+  // 🔥 Modal State
+  const [confirmDrink, setConfirmDrink] =
+    useState<Drink | null>(null);
+  const [confirmAmount, setConfirmAmount] =
+    useState<number>(0);
 
   useEffect(() => {
     init();
@@ -38,15 +44,19 @@ export default function DashboardPage() {
     const me = await meRes.json();
     setName(me.name);
 
-    const drinksRes = await fetch("/api/drinks/me", {
-      credentials: "include",
-      cache: "no-store",
-    });
+    const drinksRes = await fetch(
+      "/api/drinks/me",
+      {
+        credentials: "include",
+        cache: "no-store",
+      }
+    );
 
     const data = await drinksRes.json();
     setDrinks(data);
 
-    const nextDraft: Record<number, number> = {};
+    const nextDraft: Record<number, number> =
+      {};
     data.forEach((d: Drink) => {
       nextDraft[d.id] = 0;
     });
@@ -55,17 +65,26 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
-  function change(drinkId: number, value: number) {
+  function change(
+    drinkId: number,
+    value: number
+  ) {
     setDraft((prev) => ({
       ...prev,
       [drinkId]: value < 0 ? 0 : value,
     }));
   }
 
-  async function confirmBooking(drink: Drink) {
+  function openConfirm(drink: Drink) {
     const amount = draft[drink.id];
-
     if (!amount || amount <= 0) return;
+
+    setConfirmDrink(drink);
+    setConfirmAmount(amount);
+  }
+
+  async function confirmBooking() {
+    if (!confirmDrink) return;
 
     await fetch("/api/drinks/increment", {
       method: "POST",
@@ -74,11 +93,13 @@ export default function DashboardPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        drinkId: drink.id,
-        amount,
+        drinkId: confirmDrink.id,
+        amount: confirmAmount,
       }),
     });
 
+    setConfirmDrink(null);
+    setConfirmAmount(0);
     await init();
   }
 
@@ -93,20 +114,21 @@ export default function DashboardPage() {
 
   return (
     <main className="p-6 space-y-6 pb-24">
-
       <h1 className="text-xl font-bold">
         Hallo {name} 👋
       </h1>
 
       <div className="text-sm text-gray-600">
-        Gesamt getrunken: {total} Flaschen
+        Gesamt getrunken: {total}
       </div>
 
       <section className="bg-white p-4 rounded-xl shadow space-y-4">
         {drinks.map((d) => {
           const stockCases =
             d.unitsPerCase > 0
-              ? Math.floor(d.stock / d.unitsPerCase)
+              ? Math.floor(
+                  d.stock / d.unitsPerCase
+                )
               : 0;
 
           const stockBottles =
@@ -133,7 +155,6 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex gap-2 items-center pt-2">
-
                 <button
                   onClick={() =>
                     change(
@@ -153,7 +174,9 @@ export default function DashboardPage() {
                   onChange={(e) =>
                     change(
                       d.id,
-                      Number(e.target.value)
+                      Number(
+                        e.target.value
+                      )
                     )
                   }
                   className="w-16 text-center border rounded p-1"
@@ -173,7 +196,7 @@ export default function DashboardPage() {
 
                 <button
                   onClick={() =>
-                    confirmBooking(d)
+                    openConfirm(d)
                   }
                   disabled={
                     !draft[d.id] ||
@@ -183,12 +206,51 @@ export default function DashboardPage() {
                 >
                   Buchen
                 </button>
-
               </div>
             </div>
           );
         })}
       </section>
+
+      {/* 🔥 Modal */}
+      {confirmDrink && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow w-80 space-y-4">
+            <h2 className="text-lg font-bold">
+              Buchung bestätigen
+            </h2>
+
+            <p>
+              Möchtest du wirklich{" "}
+              <strong>
+                {confirmAmount}x{" "}
+                {confirmDrink.name}
+              </strong>{" "}
+              buchen?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() =>
+                  setConfirmDrink(null)
+                }
+                className="px-3 py-1 border rounded"
+              >
+                Abbrechen
+              </button>
+
+              <button
+                onClick={
+                  confirmBooking
+                }
+                className="px-3 py-1 bg-green-600 text-white rounded"
+              >
+                Ja, buchen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

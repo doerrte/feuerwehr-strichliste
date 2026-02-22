@@ -1,35 +1,43 @@
-"use client";
+import { prisma } from "@/lib/prisma";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+export default async function IntroPage() {
+  const cookieStore = cookies();
+  const userId = Number(
+    cookieStore.get("userId")?.value
+  );
 
-export default function IntroPage() {
-  const router = useRouter();
-  const [role, setRole] = useState<string | null>(null);
+  if (!userId) {
+    redirect("/login");
+  }
 
-  useEffect(() => {
-    async function loadUser() {
-      const res = await fetch("/api/auth/me");
-      const data = await res.json();
-      setRole(data.role);
-    }
-    loadUser();
-  }, []);
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  if (!user) {
+    redirect("/login");
+  }
 
   async function finishIntro() {
-    await fetch("/api/users/mark-intro", {
-      method: "POST",
+    "use server";
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { hasSeenIntro: true },
     });
 
-    router.replace("/dashboard");
+    redirect("/dashboard");
   }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
       <div className="bg-white max-w-md w-full rounded-xl shadow p-6 space-y-6">
 
+        {/* 👇 Hier ist der Benutzername */}
         <h1 className="text-xl font-bold">
-          Willkommen 👋
+          Willkommen, {user.name} 👋
         </h1>
 
         <section className="space-y-2 text-sm">
@@ -44,7 +52,7 @@ export default function IntroPage() {
           </ul>
         </section>
 
-        {role === "ADMIN" && (
+        {user.role === "ADMIN" && (
           <section className="space-y-2 text-sm">
             <h2 className="font-semibold">
               Für Admins
@@ -54,17 +62,19 @@ export default function IntroPage() {
               <li>Mindestbestand setzen</li>
               <li>Strichliste korrigieren</li>
               <li>QR-Codes generieren</li>
-              <li>Getränke zurücksetzen</li>
+              <li>Reset durchführen</li>
             </ul>
           </section>
         )}
 
-        <button
-          onClick={finishIntro}
-          className="w-full bg-green-600 text-white py-2 rounded"
-        >
-          Verstanden
-        </button>
+        <form action={finishIntro}>
+          <button
+            type="submit"
+            className="w-full bg-green-600 text-white py-2 rounded"
+          >
+            Verstanden
+          </button>
+        </form>
 
       </div>
     </main>

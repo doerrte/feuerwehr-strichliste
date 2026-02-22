@@ -25,14 +25,9 @@ export async function GET(req: Request) {
   }
 
   const { searchParams } = new URL(req.url);
-  const userId = Number(searchParams.get("userId"));
-
-  if (!userId) {
-    return NextResponse.json(
-      { error: "userId fehlt" },
-      { status: 400 }
-    );
-  }
+  const userId = Number(
+    searchParams.get("userId")
+  );
 
   const counts = await prisma.count.findMany({
     where: { userId },
@@ -43,4 +38,34 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json(counts);
+}
+
+export async function POST(req: Request) {
+  if (!(await requireAdmin())) {
+    return NextResponse.json(
+      { error: "Nicht erlaubt" },
+      { status: 403 }
+    );
+  }
+
+  const { userId, drinkId, amount } =
+    await req.json();
+
+  const result =
+    await prisma.count.upsert({
+      where: {
+        userId_drinkId: {
+          userId,
+          drinkId,
+        },
+      },
+      update: { amount },
+      create: {
+        userId,
+        drinkId,
+        amount,
+      },
+    });
+
+  return NextResponse.json(result);
 }

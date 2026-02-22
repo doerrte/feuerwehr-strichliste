@@ -17,17 +17,17 @@ export default function LagerPage() {
 
   const [refillData, setRefillData] =
     useState({
-      cases: 0,
-      singleBottles: 0,
+      cases: "",
+      singleBottles: "",
     });
 
   const [newDrink, setNewDrink] =
     useState({
       name: "",
-      unitsPerCase: 12,
-      cases: 0,
-      singleBottles: 0,
-      minStock: 10,
+      unitsPerCase: "",
+      cases: "",
+      singleBottles: "",
+      minStock: "",
     });
 
   useEffect(() => {
@@ -41,22 +41,38 @@ export default function LagerPage() {
   }
 
   async function addDrink() {
-    if (!newDrink.name) return;
+    if (!newDrink.name || !newDrink.unitsPerCase)
+      return;
 
     await fetch("/api/drinks", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type":
+          "application/json",
       },
-      body: JSON.stringify(newDrink),
+      body: JSON.stringify({
+        name: newDrink.name,
+        unitsPerCase: Number(
+          newDrink.unitsPerCase
+        ),
+        cases: Number(
+          newDrink.cases || 0
+        ),
+        singleBottles: Number(
+          newDrink.singleBottles || 0
+        ),
+        minStock: Number(
+          newDrink.minStock || 10
+        ),
+      }),
     });
 
     setNewDrink({
       name: "",
-      unitsPerCase: 12,
-      cases: 0,
-      singleBottles: 0,
-      minStock: 10,
+      unitsPerCase: "",
+      cases: "",
+      singleBottles: "",
+      minStock: "",
     });
 
     load();
@@ -65,8 +81,8 @@ export default function LagerPage() {
   function openRefill(drink: Drink) {
     setRefillDrink(drink);
     setRefillData({
-      cases: 0,
-      singleBottles: 0,
+      cases: "",
+      singleBottles: "",
     });
   }
 
@@ -74,9 +90,9 @@ export default function LagerPage() {
     if (!refillDrink) return;
 
     const added =
-      refillData.cases *
+      Number(refillData.cases || 0) *
         refillDrink.unitsPerCase +
-      refillData.singleBottles;
+      Number(refillData.singleBottles || 0);
 
     if (added <= 0) return;
 
@@ -145,7 +161,7 @@ export default function LagerPage() {
               setNewDrink({
                 ...newDrink,
                 unitsPerCase:
-                  Number(e.target.value),
+                  e.target.value,
               })
             }
             className="border p-2 rounded w-full"
@@ -159,7 +175,7 @@ export default function LagerPage() {
               setNewDrink({
                 ...newDrink,
                 cases:
-                  Number(e.target.value),
+                  e.target.value,
               })
             }
             className="border p-2 rounded w-full"
@@ -173,7 +189,7 @@ export default function LagerPage() {
               setNewDrink({
                 ...newDrink,
                 singleBottles:
-                  Number(e.target.value),
+                  e.target.value,
               })
             }
             className="border p-2 rounded w-full"
@@ -187,11 +203,27 @@ export default function LagerPage() {
               setNewDrink({
                 ...newDrink,
                 minStock:
-                  Number(e.target.value),
+                  e.target.value,
               })
             }
             className="border p-2 rounded w-full"
           />
+
+          <div className="text-sm text-gray-600">
+            Gesamtbestand:{" "}
+            {newDrink.unitsPerCase &&
+            newDrink.cases
+              ? Number(
+                  newDrink.unitsPerCase
+                ) *
+                  Number(newDrink.cases) +
+                Number(
+                  newDrink.singleBottles ||
+                    0
+                )
+              : 0}{" "}
+            Flaschen
+          </div>
 
           <button
             onClick={addDrink}
@@ -228,7 +260,7 @@ export default function LagerPage() {
               key={drink.id}
               className="bg-white p-4 rounded shadow space-y-2"
             >
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between">
                 <div className="font-bold">
                   {drink.name}
                 </div>
@@ -239,11 +271,12 @@ export default function LagerPage() {
                   </span>
                 )}
 
-                {!isEmpty && isLow && (
-                  <span className="text-yellow-600 font-bold">
-                    🟡 Niedrig
-                  </span>
-                )}
+                {!isEmpty &&
+                  isLow && (
+                    <span className="text-yellow-600 font-bold">
+                      🟡 Niedrig
+                    </span>
+                  )}
               </div>
 
               <div
@@ -253,7 +286,8 @@ export default function LagerPage() {
                     : ""
                 }`}
               >
-                Bestand: {drink.stock} Flaschen
+                Bestand: {drink.stock}{" "}
+                Flaschen
               </div>
 
               <div className="text-xs text-gray-500">
@@ -297,7 +331,8 @@ export default function LagerPage() {
           <div className="bg-white p-6 rounded-xl shadow space-y-4 w-96">
 
             <h2 className="font-bold">
-              Auffüllen – {refillDrink.name}
+              Auffüllen –{" "}
+              {refillDrink.name}
             </h2>
 
             <input
@@ -308,9 +343,7 @@ export default function LagerPage() {
                 setRefillData({
                   ...refillData,
                   cases:
-                    Number(
-                      e.target.value
-                    ),
+                    e.target.value,
                 })
               }
               className="border p-2 rounded w-full"
@@ -326,9 +359,7 @@ export default function LagerPage() {
                 setRefillData({
                   ...refillData,
                   singleBottles:
-                    Number(
-                      e.target.value
-                    ),
+                    e.target.value,
                 })
               }
               className="border p-2 rounded w-full"
@@ -336,9 +367,14 @@ export default function LagerPage() {
 
             <div className="text-sm">
               Zuwachs:{" "}
-              {refillData.cases *
+              {Number(
+                refillData.cases || 0
+              ) *
                 refillDrink.unitsPerCase +
-                refillData.singleBottles}{" "}
+                Number(
+                  refillData.singleBottles ||
+                    0
+                )}{" "}
               Flaschen
             </div>
 

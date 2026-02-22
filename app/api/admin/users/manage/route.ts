@@ -1,72 +1,78 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
-function getCurrentUserId() {
-  return Number(cookies().get("userId")?.value);
-}
+async function requireAdmin() {
+  const userId = Number(
+    cookies().get("userId")?.value
+  );
 
-function isAdmin() {
-  return !!getCurrentUserId();
+  if (!userId) return false;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+
+  return user?.role === "ADMIN";
 }
 
 export async function POST(req: Request) {
-  if (!isAdmin()) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const currentUserId = getCurrentUserId();
-  const { userId, action } = await req.json();
-
-  if (!userId || !action) {
-    return NextResponse.json(
-      { error: "Fehlende Daten" },
-      { status: 400 }
-    );
-  }
-
-  // ❌ Admin darf sich nicht selbst löschen
-  if (action === "delete" && userId === currentUserId) {
-    return NextResponse.json(
-      { error: "Admin kann sich nicht selbst löschen" },
-      { status: 400 }
-    );
-  }
-
-  if (action === "toggle") {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
+  try {
+    if (!(await requireAdmin())) {
       return NextResponse.json(
-        { error: "User nicht gefunden" },
-        { status: 404 }
+        { error: "Nicht erlaubt" },
+        { status: 403 }
       );
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { active: !user.active },
+    const { userId, action } =
+      await req.json();
+
+    if (!userId || !action) {
+      return NextResponse.json(
+        { error: "Ungültige Daten" },
+        { status: 400 }
+      );
+    }
+
+    if (action === "delete") {
+      // 🔥 zuerst alle Relations löschen
+
+      await prisma.count.deleteMany({
+        where: { userId },
+      });
+
+      await prisma.countLog.deleteMany({
+        where: {
+          OR: [
+            { userId },
+            { adminId: userId },
+          ],
+        },
+      });
+
+      await prisma.user.delete({
+        where: { id: userId },
+      });
+
+      return NextResponse.json({
+        success: true,
+      });
+    }
+
+    return NextResponse.json({
+      error: "Unbekannte Aktion",
     });
 
-    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error(
+      "USER MANAGE ERROR:",
+      error
+    );
+
+    return NextResponse.json(
+      { error: "Serverfehler" },
+      { status: 500 }
+    );
   }
-
-  if (action === "delete") {
-    await prisma.count.deleteMany({
-      where: { userId },
-    });
-
-    await prisma.user.delete({
-      where: { id: userId },
-    });
-
-    return NextResponse.json({ success: true });
-  }
-
-  return NextResponse.json(
-    { error: "Ungültige Aktion" },
-    { status: 400 }
-  );
 }

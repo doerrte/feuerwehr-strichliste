@@ -1,5 +1,6 @@
 import "./globals.css";
 import Navbar from "@/components/Navbar";
+import InstallPrompt from "@/components/InstallPrompt";
 
 export const metadata = {
   title: "Strichliste",
@@ -14,6 +15,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <body className="min-h-screen bg-gray-100 pb-20">
+        <InstallPrompt />
         {children}
         <Navbar />
       </body>

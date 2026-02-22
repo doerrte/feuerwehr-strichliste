@@ -22,8 +22,8 @@ export default function AdminStrichlistePage() {
   const [users, setUsers] = useState<User[]>([]);
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [counts, setCounts] = useState<Record<number, number>>({});
-  const [selectedUser, setSelectedUser] =
-    useState<User | null>(null);
+  const [draftCounts, setDraftCounts] = useState<Record<number, number>>({});
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
@@ -49,6 +49,7 @@ export default function AdminStrichlistePage() {
     const res = await fetch(
       `/api/admin/counts?userId=${user.id}`
     );
+
     const data: Count[] = await res.json();
 
     const map: Record<number, number> = {};
@@ -60,75 +61,61 @@ export default function AdminStrichlistePage() {
     });
 
     setCounts(map);
+    setDraftCounts(map);
     setTotal(sum);
   }
 
-  async function updateCount(
-    drinkId: number,
-    newAmount: number
-  ) {
-    if (!selectedUser) return;
-
-    if (!confirm("Änderung wirklich speichern?"))
-      return;
-
-    await fetch("/api/admin/counts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId: selectedUser.id,
-        drinkId,
-        amount: newAmount,
-      }),
-    });
-
-    const newCounts = {
-      ...counts,
-      [drinkId]: newAmount,
+  function changeDraft(drinkId: number, value: number) {
+    const updated = {
+      ...draftCounts,
+      [drinkId]: value,
     };
 
-    setCounts(newCounts);
+    setDraftCounts(updated);
 
-    const newTotal = Object.values(
-      newCounts
-    ).reduce((a, b) => a + b, 0);
+    const newTotal = Object.values(updated).reduce(
+      (a, b) => a + b,
+      0
+    );
 
     setTotal(newTotal);
   }
 
-  async function resetAll() {
+  async function saveChanges() {
     if (!selectedUser) return;
 
-    if (
-      !confirm(
-        "⚠️ Wirklich alle Getränke auf 0 setzen?"
-      )
-    )
-      return;
+    if (!confirm("Änderungen speichern?")) return;
 
-    await fetch(
-      "/api/admin/counts/reset",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: selectedUser.id,
-        }),
+    for (const drinkId of Object.keys(draftCounts)) {
+      const id = Number(drinkId);
+
+      if (draftCounts[id] !== counts[id]) {
+        await fetch("/api/admin/counts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            userId: selectedUser.id,
+            drinkId: id,
+            amount: draftCounts[id],
+          }),
+        });
       }
+    }
+
+    setCounts(draftCounts);
+    alert("Änderungen gespeichert ✅");
+  }
+
+  function cancelChanges() {
+    setDraftCounts(counts);
+    setTotal(
+      Object.values(counts).reduce(
+        (a, b) => a + b,
+        0
+      )
     );
-
-    // UI zurücksetzen
-    const resetMap: Record<number, number> = {};
-    drinks.forEach((d) => {
-      resetMap[d.id] = 0;
-    });
-
-    setCounts(resetMap);
-    setTotal(0);
   }
 
   return (
@@ -158,9 +145,7 @@ export default function AdminStrichlistePage() {
                 Strichliste von {selectedUser.name}
               </h2>
               <button
-                onClick={() =>
-                  setSelectedUser(null)
-                }
+                onClick={() => setSelectedUser(null)}
                 className="text-red-600"
               >
                 ✕
@@ -168,8 +153,7 @@ export default function AdminStrichlistePage() {
             </div>
 
             <div className="text-sm text-gray-600">
-              Gesamt:{" "}
-              <strong>{total}</strong>
+              Gesamt: <strong>{total}</strong>
             </div>
 
             <div className="space-y-3 max-h-80 overflow-y-auto">
@@ -182,15 +166,11 @@ export default function AdminStrichlistePage() {
 
                   <input
                     type="number"
-                    value={
-                      counts[d.id] ?? 0
-                    }
+                    value={draftCounts[d.id] ?? 0}
                     onChange={(e) =>
-                      updateCount(
+                      changeDraft(
                         d.id,
-                        Number(
-                          e.target.value
-                        )
+                        Number(e.target.value)
                       )
                     }
                     className="w-20 text-center border rounded p-1"
@@ -201,19 +181,17 @@ export default function AdminStrichlistePage() {
 
             <div className="flex justify-between pt-4">
               <button
-                onClick={resetAll}
-                className="bg-red-600 text-white px-4 py-2 rounded"
+                onClick={cancelChanges}
+                className="border px-4 py-2 rounded"
               >
-                🔄 Reset
+                Abbrechen
               </button>
 
               <button
-                onClick={() =>
-                  setSelectedUser(null)
-                }
-                className="border px-4 py-2 rounded"
+                onClick={saveChanges}
+                className="bg-green-600 text-white px-4 py-2 rounded"
               >
-                Schließen
+                Speichern
               </button>
             </div>
 

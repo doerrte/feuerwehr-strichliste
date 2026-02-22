@@ -170,15 +170,21 @@ export default function DashboardPage() {
                 <input
                   type="number"
                   min={0}
-                  value={draft[d.id] ?? 0}
-                  onChange={(e) =>
+                  value={
+                    draft[d.id] && draft[d.id] > 0
+                      ? draft[d.id]
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const value = e.target.value;
+
                     change(
                       d.id,
-                      Number(
-                        e.target.value
-                      )
-                    )
-                  }
+                      value === ""
+                        ? 0
+                        : Number(value)
+                    );
+                  }}
                   className="w-16 text-center border rounded p-1"
                 />
 

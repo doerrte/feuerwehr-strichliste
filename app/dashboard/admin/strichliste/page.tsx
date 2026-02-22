@@ -26,8 +26,14 @@ export default function AdminStrichlistePage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [total, setTotal] = useState(0);
 
+  // 🔥 Bestätigungs-State
+  const [pendingChange, setPendingChange] = useState<{
+    drinkId: number;
+    oldValue: number;
+    newValue: number;
+  } | null>(null);
+
   useEffect(() => {
-    console.log("STRICHLISTE PAGE GELADEN");
     loadUsers();
     loadDrinks();
   }, []);
@@ -37,11 +43,9 @@ export default function AdminStrichlistePage() {
     if (!res.ok) return;
 
     const data = await res.json();
-
     const activeUsers = data.filter((u: User) => u.active);
     setUsers(activeUsers);
 
-    // 🔥 Für jeden Benutzer Gesamtstand berechnen
     const totals: Record<number, number> = {};
 
     for (const user of activeUsers) {
@@ -63,8 +67,9 @@ export default function AdminStrichlistePage() {
   }
 
   async function loadDrinks() {
-    const res = await fetch("/api/admin/drinks");
+    const res = await fetch("/api/admin/counts/drinks");
     if (!res.ok) return;
+
     const data = await res.json();
     setDrinks(data);
   }
@@ -92,22 +97,43 @@ export default function AdminStrichlistePage() {
     setTotal(sum);
   }
 
-  async function updateCount(drinkId: number, newAmount: number) {
+  function requestUpdate(
+    drinkId: number,
+    newAmount: number
+  ) {
     if (!selectedUser) return;
+
+    const oldValue = counts[drinkId] ?? 0;
+
+    if (newAmount === oldValue) return;
+
+    setPendingChange({
+      drinkId,
+      oldValue,
+      newValue: newAmount,
+    });
+  }
+
+  async function confirmUpdate() {
+    if (!pendingChange || !selectedUser) return;
+
+    const { drinkId, newValue } = pendingChange;
 
     await fetch("/api/admin/counts", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         userId: selectedUser.id,
         drinkId,
-        amount: newAmount,
+        amount: newValue,
       }),
     });
 
     const newCounts = {
       ...counts,
-      [drinkId]: newAmount,
+      [drinkId]: newValue,
     };
 
     setCounts(newCounts);
@@ -119,11 +145,12 @@ export default function AdminStrichlistePage() {
 
     setTotal(newTotal);
 
-    // 🔥 Auch Liste oben aktualisieren
     setUserTotals((prev) => ({
       ...prev,
       [selectedUser.id]: newTotal,
     }));
+
+    setPendingChange(null);
   }
 
   return (
@@ -132,7 +159,7 @@ export default function AdminStrichlistePage() {
         📊 Admin – Strichliste
       </h1>
 
-      {/* Benutzerliste mit Gesamtstand */}
+      {/* Benutzerliste */}
       <section className="space-y-3">
         {users.map((u) => (
           <div
@@ -151,11 +178,10 @@ export default function AdminStrichlistePage() {
         ))}
       </section>
 
-      {/* Modal */}
+      {/* User Modal */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
           <div className="bg-white w-full max-w-lg rounded-xl shadow p-6 space-y-4">
-
             <div className="flex justify-between items-center">
               <h2 className="text-lg font-bold">
                 Strichliste von {selectedUser.name}
@@ -185,7 +211,7 @@ export default function AdminStrichlistePage() {
                     type="number"
                     value={counts[d.id] ?? 0}
                     onChange={(e) =>
-                      updateCount(
+                      requestUpdate(
                         d.id,
                         Number(e.target.value)
                       )
@@ -194,6 +220,47 @@ export default function AdminStrichlistePage() {
                   />
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🔥 Bestätigungs-Modal */}
+      {pendingChange && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-xl shadow w-80 space-y-4">
+            <h2 className="font-bold text-lg">
+              Änderung bestätigen
+            </h2>
+
+            <p>
+              Wirklich von{" "}
+              <strong>
+                {pendingChange.oldValue}
+              </strong>{" "}
+              auf{" "}
+              <strong>
+                {pendingChange.newValue}
+              </strong>{" "}
+              ändern?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() =>
+                  setPendingChange(null)
+                }
+                className="px-3 py-1 border rounded"
+              >
+                Abbrechen
+              </button>
+
+              <button
+                onClick={confirmUpdate}
+                className="px-3 py-1 bg-green-600 text-white rounded"
+              >
+                Bestätigen
+              </button>
             </div>
           </div>
         </div>

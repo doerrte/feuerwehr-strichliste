@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="de">
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon.jpg" />
+        <link rel="apple-touch-icon" href="/icons/feuerwehr.png" />
         <meta name="theme-color" content="#dc2626" />
       </head>
       <body className="min-h-screen bg-gray-100 pb-20">

@@ -14,9 +14,9 @@ export default function LagerPage() {
 
   const [newDrink, setNewDrink] = useState({
     name: "",
-    unitsPerCase: "",
-    cases: "",
-    sinlgeBottles: ""
+    unitsPerCase: 12,
+    cases: 0,
+    singleBottles: 0,
   });
 
   useEffect(() => {
@@ -30,25 +30,25 @@ export default function LagerPage() {
   }
 
   async function addDrink() {
-  if (!newDrink.name) return;
+    if (!newDrink.name) return;
 
-  await fetch("/api/drinks", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(newDrink),
-  });
+    await fetch("/api/drinks", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(newDrink),
+    });
 
-  setNewDrink({
-    name: "",
-    unitsPerCase: "",
-    cases: "",
-    singleBottles: "",
-  });
+    setNewDrink({
+      name: "",
+      unitsPerCase: 12,
+      cases: 0,
+      singleBottles: 0,
+    });
 
-  load();
-}
+    load();
+  }
 
   async function refill(id: number) {
     const amount = Number(
@@ -66,7 +66,6 @@ export default function LagerPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        ...drink,
         stock: drink.stock + amount,
       }),
     });
@@ -86,120 +85,117 @@ export default function LagerPage() {
 
   return (
     <main className="p-6 space-y-8">
-
       <h1 className="text-xl font-bold">
         📦 Lagerverwaltung
       </h1>
 
-      {/* Neues Getränk hinzufügen */}
-     <section className="bg-white p-4 rounded shadow space-y-4">
-  <h2 className="font-semibold">
-    Neues Getränk hinzufügen
-  </h2>
+      {/* Neues Getränk */}
+      <section className="bg-white p-4 rounded shadow space-y-4">
+        <h2 className="font-semibold">
+          Neues Getränk hinzufügen
+        </h2>
 
-  <div className="space-y-3">
+        <div className="space-y-3">
 
-    {/* Name */}
-    <div>
-      <label className="block text-sm font-medium">
-        Getränkename
-      </label>
-      <input
-        value={newDrink.name}
-        onChange={(e) =>
-          setNewDrink({
-            ...newDrink,
-            name: e.target.value,
-          })
-        }
-        className="border p-2 rounded w-full"
-      />
-    </div>
+          <div>
+            <label className="block text-sm font-medium">
+              Getränkename
+            </label>
+            <input
+              value={newDrink.name}
+              onChange={(e) =>
+                setNewDrink({
+                  ...newDrink,
+                  name: e.target.value,
+                })
+              }
+              className="border p-2 rounded w-full"
+            />
+          </div>
 
-    {/* Flaschen pro Kasten */}
-    <div>
-      <label className="block text-sm font-medium">
-        Flaschen pro Kasten
-      </label>
-      <input
-        type="number"
-        value={newDrink.unitsPerCase}
-        onChange={(e) =>
-          setNewDrink({
-            ...newDrink,
-            unitsPerCase: Number(e.target.value),
-          })
-        }
-        className="border p-2 rounded w-full"
-      />
-    </div>
+          <div>
+            <label className="block text-sm font-medium">
+              Flaschen pro Kasten
+            </label>
+            <input
+              type="number"
+              value={newDrink.unitsPerCase}
+              onChange={(e) =>
+                setNewDrink({
+                  ...newDrink,
+                  unitsPerCase: Number(e.target.value),
+                })
+              }
+              className="border p-2 rounded w-full"
+            />
+          </div>
 
-    {/* Kästen */}
-    <div>
-      <label className="block text-sm font-medium">
-        Anzahl Kästen
-      </label>
-      <input
-        type="number"
-        value={newDrink.cases}
-        onChange={(e) =>
-          setNewDrink({
-            ...newDrink,
-            cases: Number(e.target.value),
-          })
-        }
-        className="border p-2 rounded w-full"
-      />
-    </div>
+          <div>
+            <label className="block text-sm font-medium">
+              Anzahl Kästen
+            </label>
+            <input
+              type="number"
+              value={newDrink.cases}
+              onChange={(e) =>
+                setNewDrink({
+                  ...newDrink,
+                  cases: Number(e.target.value),
+                })
+              }
+              className="border p-2 rounded w-full"
+            />
+          </div>
 
-    {/* Einzel-Flaschen */}
-    <div>
-      <label className="block text-sm font-medium">
-        Zusätzliche Einzelflaschen
-      </label>
-      <input
-        type="number"
-        value={newDrink.singleBottles}
-        onChange={(e) =>
-          setNewDrink({
-            ...newDrink,
-            singleBottles: Number(e.target.value),
-          })
-        }
-        className="border p-2 rounded w-full"
-      />
-    </div>
+          <div>
+            <label className="block text-sm font-medium">
+              Zusätzliche Einzelflaschen
+            </label>
+            <input
+              type="number"
+              value={newDrink.singleBottles}
+              onChange={(e) =>
+                setNewDrink({
+                  ...newDrink,
+                  singleBottles: Number(e.target.value),
+                })
+              }
+              className="border p-2 rounded w-full"
+            />
+          </div>
 
-    {/* Vorschau Gesamtbestand */}
-    <div className="text-sm text-gray-600">
-      Gesamtbestand:{" "}
-      {newDrink.unitsPerCase *
-        newDrink.cases +
-        newDrink.singleBottles}{" "}
-      Flaschen
-    </div>
+          <div className="text-sm text-gray-600">
+            Gesamtbestand:{" "}
+            {newDrink.unitsPerCase *
+              newDrink.cases +
+              newDrink.singleBottles}{" "}
+            Flaschen
+          </div>
 
-    <button
-      onClick={addDrink}
-      className="bg-green-600 text-white px-4 py-2 rounded"
-    >
-      Getränk erstellen
-    </button>
+          <button
+            onClick={addDrink}
+            className="bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Getränk erstellen
+          </button>
 
-  </div>
-</section>
+        </div>
+      </section>
 
       {/* Bestehende Getränke */}
       <section className="space-y-4">
         {drinks.map((drink) => {
+          const cases =
+            drink.unitsPerCase > 0
+              ? Math.floor(
+                  drink.stock / drink.unitsPerCase
+                )
+              : 0;
 
-          const cases = drink.unitsPerCase > 0
-            ? Math.floor(drink.stock / drink.unitsPerCase)
-            : 0;
-
-          const bottles = drink.unitsPerCase > 0
-            ? drink.stock % drink.unitsPerCase
-            : drink.stock;
+          const bottles =
+            drink.unitsPerCase > 0
+              ? drink.stock % drink.unitsPerCase
+              : drink.stock;
 
           return (
             <div
@@ -220,14 +216,18 @@ export default function LagerPage() {
 
               <div className="flex gap-3 pt-2">
                 <button
-                  onClick={() => refill(drink.id)}
+                  onClick={() =>
+                    refill(drink.id)
+                  }
                   className="bg-blue-600 text-white px-3 py-1 rounded"
                 >
                   Auffüllen
                 </button>
 
                 <button
-                  onClick={() => deleteDrink(drink.id)}
+                  onClick={() =>
+                    deleteDrink(drink.id)
+                  }
                   className="bg-red-600 text-white px-3 py-1 rounded"
                 >
                   Löschen
@@ -237,7 +237,6 @@ export default function LagerPage() {
           );
         })}
       </section>
-
     </main>
   );
 }

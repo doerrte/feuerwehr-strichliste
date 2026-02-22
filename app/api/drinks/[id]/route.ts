@@ -17,7 +17,7 @@ async function requireAdmin() {
 }
 
 /* =========================
-   PATCH – Getränk bearbeiten
+   PATCH – Bestand ändern
 ========================= */
 export async function PATCH(
   req: Request,
@@ -31,15 +31,12 @@ export async function PATCH(
   }
 
   const drinkId = Number(params.id);
-  const { name, stock, unitsPerCase } =
-    await req.json();
+  const body = await req.json();
 
   const updated = await prisma.drink.update({
     where: { id: drinkId },
     data: {
-      name,
-      stock,
-      unitsPerCase,
+      stock: Number(body.stock),
     },
   });
 

@@ -231,7 +231,12 @@ export default function DashboardPage() {
                 = {cases} Kisten + {bottles} Flaschen
               </div>
 
-              <div className="flex gap-2 items-center pt-2">
+              <div className="px-2 border rounded select-none touch-manipulation"
+                    style={{
+                      WebkitUserSelect: "none",
+                      userSelect: "none",
+                      WebkitTouchCallout: "none",
+                    }}>
                 <button
                   onClick={() => decrement(d.id)}
                   className="px-2 border rounded"
@@ -254,9 +259,20 @@ export default function DashboardPage() {
                   }}
                   onMouseDown={() => handlePressStart(d)}
                   onMouseUp={handlePressEnd}
-                  onTouchStart={() => handlePressStart(d)}
-                  onTouchEnd={handlePressEnd}
-                  className="px-2 border rounded"
+                  onTouchStart={(e) => {
+                    e.preventDefault();
+                    handlePressStart(d);
+                  }}
+                  onTouchEnd={(e) => {
+                    e.preventDefault();
+                    handlePressEnd();
+                  }}
+                  className="px-2 border rounded select-none touch-manipulation"
+                  style={{
+                    WebkitUserSelect: "none",
+                    userSelect: "none",
+                    WebkitTouchCallout: "none",
+                  }}
                 >
                   +
                 </button>

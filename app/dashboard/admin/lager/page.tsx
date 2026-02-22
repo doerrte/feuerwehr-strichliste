@@ -197,7 +197,7 @@ export default function LagerPage() {
 
           <input
             type="number"
-            placeholder="Mindestbestand (Warnung)"
+            placeholder="Mindestbestand Flaschen (Warnung)"
             value={newDrink.minStock}
             onChange={(e) =>
               setNewDrink({

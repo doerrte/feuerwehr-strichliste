@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createSignature } from "@/lib/qrSignature";
 import QRCode from "qrcode";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export default async function LagerPage() {

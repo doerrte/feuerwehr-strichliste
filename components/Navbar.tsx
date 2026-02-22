@@ -7,35 +7,41 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
 
-  const [role, setRole] = useState<"ADMIN" | "USER" | null>(null);
-  const [checked, setChecked] = useState(false);
-  const [adminRoute, setAdminRoute] = useState("");
-  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [role, setRole] = useState<
+    "ADMIN" | "USER" | null
+  >(null);
 
+  const [adminRoute, setAdminRoute] = useState("");
+
+  // 🔥 WICHTIG: bei jeder Routenänderung neu prüfen
   useEffect(() => {
-    async function load() {
+    async function loadUser() {
       const res = await fetch("/api/auth/me", {
         credentials: "include",
+        cache: "no-store",
       });
 
       if (!res.ok) {
-        setChecked(true);
+        setRole(null);
         return;
       }
 
       const data = await res.json();
       setRole(data.role);
-      setChecked(true);
     }
 
-    load();
-  }, []);
+    loadUser();
+  }, [pathname]); // 👈 reagiert auf Navigation
 
-  if (!checked) return null;
   if (pathname === "/login") return null;
   if (!role) return null;
 
   async function logout() {
+    const confirmed = confirm(
+      "Möchtest du dich wirklich ausloggen?"
+    );
+    if (!confirmed) return;
+
     await fetch("/api/auth/logout", {
       method: "POST",
       credentials: "include",
@@ -51,88 +57,63 @@ export default function Navbar() {
   }
 
   return (
-    <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-between items-center shadow">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-between items-center shadow">
 
-        {/* 🔧 Admin Menü */}
-        {role === "ADMIN" && (
-          <select
-            value={adminRoute}
-            onChange={(e) => handleAdminChange(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
-          >
-            <option value="" disabled>Menü</option>
-            <option value="/dashboard">Dashboard</option>
-            <option value="/dashboard/admin">
-              Benutzerverwaltung
-            </option>
-            <option value="/dashboard/admin/strichliste">
-              Strichliste
-            </option>
-            <option value="/dashboard/admin/lager">
-              Lager
-            </option>
-            <option value="/dashboard/profile">
-              Profil
-            </option>
-          </select>
-        )}
-
-        {/* 👤 User Menü */}
-        {role === "USER" && (
-          <select
-            value={adminRoute}
-            onChange={(e) => handleAdminChange(e.target.value)}
-            className="border rounded px-2 py-1 text-sm"
-          >
-            <option value="" disabled>Menü</option>
-            <option value="/dashboard">Dashboard</option>
-            <option value="/dashboard/profile">
-              Profil
-            </option>
-          </select>
-        )}
-
-        {/* 🚪 Logout */}
-        <button
-          onClick={() => setShowLogoutConfirm(true)}
-          className="text-red-600 font-medium"
+      {role === "ADMIN" && (
+        <select
+          value={adminRoute}
+          onChange={(e) =>
+            handleAdminChange(e.target.value)
+          }
+          className="border rounded px-2 py-1 text-sm"
         >
-          Logout
-        </button>
-      </nav>
-
-      {/* 🔥 Logout Bestätigungs-Modal */}
-      {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-xl shadow space-y-4 w-80">
-
-            <h2 className="font-bold text-lg">
-              Logout bestätigen
-            </h2>
-
-            <p className="text-sm text-gray-600">
-              Möchtest du dich wirklich abmelden?
-            </p>
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowLogoutConfirm(false)}
-                className="px-3 py-1 border rounded"
-              >
-                Abbrechen
-              </button>
-
-              <button
-                onClick={logout}
-                className="px-3 py-1 bg-red-600 text-white rounded"
-              >
-                Ja, Logout
-              </button>
-            </div>
-          </div>
-        </div>
+          <option value="" disabled>
+            Menü
+          </option>
+          <option value="/dashboard">
+            Dashboard
+          </option>
+          <option value="/dashboard/admin">
+            Benutzerverwaltung
+          </option>
+          <option value="/dashboard/admin/strichliste">
+            Strichliste
+          </option>
+          <option value="/dashboard/admin/lager">
+            Lager
+          </option>
+          <option value="/dashboard/profile">
+            Profil
+          </option>
+        </select>
       )}
-    </>
+
+      {role === "USER" && (
+        <select
+          value={adminRoute}
+          onChange={(e) =>
+            handleAdminChange(e.target.value)
+          }
+          className="border rounded px-2 py-1 text-sm"
+        >
+          <option value="" disabled>
+            Menü
+          </option>
+          <option value="/dashboard">
+            Dashboard
+          </option>
+          <option value="/dashboard/profile">
+            Profil
+          </option>
+        </select>
+      )}
+
+      <button
+        onClick={logout}
+        className="text-red-600 font-medium"
+      >
+        Logout
+      </button>
+    </nav>
   );
 }

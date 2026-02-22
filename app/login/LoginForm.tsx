@@ -7,8 +7,8 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const redirect =
-    searchParams.get("redirect") || "/dashboard";
+  const urlRedirect =
+    searchParams.get("redirect");
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -45,7 +45,12 @@ export default function LoginForm() {
         return;
       }
 
-      router.replace(redirect);
+      // 🔥 Hier liegt die Lösung
+      const finalRedirect =
+        data.redirect || urlRedirect || "/dashboard";
+
+      router.replace(finalRedirect);
+
     } catch {
       setError("Serverfehler");
       setLoading(false);

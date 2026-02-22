@@ -2,27 +2,26 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 async function requireAdmin() {
-  const userIdCookie = cookies().get("userId")?.value;
-  if (!userIdCookie) return null;
+  const userId = Number(cookies().get("userId")?.value);
+  if (!userId) return false;
 
   const user = await prisma.user.findUnique({
-    where: { id: Number(userIdCookie) },
-    select: { role: true },
+    where: { id: userId },
   });
 
-  if (!user || user.role !== "ADMIN") return null;
-
-  return Number(userIdCookie);
+  return user?.role === "ADMIN";
 }
 
-/* =========================
-   GET – Counts eines Users
-========================= */
 export async function GET(req: Request) {
-  const admin = await requireAdmin();
-  if (!admin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  if (!(await requireAdmin())) {
+    return NextResponse.json(
+      { error: "Nicht erlaubt" },
+      { status: 403 }
+    );
   }
 
   const { searchParams } = new URL(req.url);
@@ -44,33 +43,4 @@ export async function GET(req: Request) {
   });
 
   return NextResponse.json(counts);
-}
-
-/* =========================
-   POST – Count updaten
-========================= */
-export async function POST(req: Request) {
-  const admin = await requireAdmin();
-  if (!admin) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const { userId, drinkId, amount } = await req.json();
-
-  await prisma.count.upsert({
-    where: {
-      userId_drinkId: {
-        userId,
-        drinkId,
-      },
-    },
-    update: { amount },
-    create: {
-      userId,
-      drinkId,
-      amount,
-    },
-  });
-
-  return NextResponse.json({ success: true });
 }

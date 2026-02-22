@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       where: { id: Number(drinkId) },
     });
 
-    if (!drink || !drink.active) {
+    if (!drink) {
       return NextResponse.json(
         { error: "Getränk nicht verfügbar" },
         { status: 404 }

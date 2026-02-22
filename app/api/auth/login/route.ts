@@ -45,9 +45,11 @@ export async function POST(req: Request) {
     });
 
     response.cookies.set("userId", String(user.id), {
-      httpOnly: true,
-      path: "/",
-    });
+  httpOnly: true,
+  secure: true,
+  sameSite: "lax",
+  path: "/",
+});
 
     response.cookies.set("role", user.role, {
       httpOnly: true,

@@ -32,7 +32,8 @@ export default function LagerPage() {
     data.map(async (drink: Drink) => {
       try {
         const qrRes = await fetch(
-          `/api/drinks/${drink.id}/qr`
+        `/api/drinks/${drink.id}/qr`,
+        { cache: "no-store" }
         );
 
         if (!qrRes.ok) return drink;

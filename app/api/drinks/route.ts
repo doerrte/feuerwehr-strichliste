@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 async function requireAdmin() {
   const userId = Number(cookies().get("userId")?.value);
   if (!userId) return false;
@@ -10,14 +13,12 @@ async function requireAdmin() {
     where: { id: userId },
   });
 
-  if (!user || user.role !== "ADMIN") return false;
-
-  return true;
+  return user?.role === "ADMIN";
 }
 
-/* =====================
+/* =========================
    GET – Alle Getränke
-===================== */
+========================= */
 export async function GET() {
   const drinks = await prisma.drink.findMany({
     orderBy: { name: "asc" },
@@ -26,29 +27,25 @@ export async function GET() {
   return NextResponse.json(drinks);
 }
 
-/* =====================
+/* =========================
    POST – Neues Getränk
-===================== */
+========================= */
 export async function POST(req: Request) {
-  const isAdmin = await requireAdmin();
-  if (!isAdmin) {
+  if (!(await requireAdmin())) {
     return NextResponse.json(
       { error: "Nicht erlaubt" },
       { status: 403 }
     );
   }
 
-  const { name, cases, unitsPerCase, extraBottles } =
+  const { name, stock, unitsPerCase } =
     await req.json();
-
-  const totalStock =
-    cases * unitsPerCase + extraBottles;
 
   const drink = await prisma.drink.create({
     data: {
       name,
-      stock: totalStock,
-      unitsPerCase,
+      stock: Number(stock),
+      unitsPerCase: Number(unitsPerCase),
     },
   });
 

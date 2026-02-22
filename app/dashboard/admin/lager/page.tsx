@@ -25,33 +25,37 @@ export default function LagerPage() {
   }, []);
 
   async function load() {
-  const res = await fetch("/api/drinks");
-  const data = await res.json();
+    const res = await fetch("/api/drinks", {
+      cache: "no-store",
+    });
 
-  const drinksWithQR = await Promise.all(
-    data.map(async (drink: Drink) => {
-      try {
-        const qrRes = await fetch(
-        `/api/drinks/${drink.id}/qr`,
-        { cache: "no-store" }
-        );
+    const data = await res.json();
 
-        if (!qrRes.ok) return drink;
+    const drinksWithQR = await Promise.all(
+      data.map(async (drink: Drink) => {
+        try {
+          const qrRes = await fetch(
+            `/api/drinks/${drink.id}/qr`,
+            { cache: "no-store" }
+          );
 
-        const qrData = await qrRes.json();
+          if (!qrRes.ok) return drink;
 
-        return {
-          ...drink,
-          qr: qrData.qr,
-        };
-      } catch {
-        return drink;
-      }
-    })
-  );
+          const qrData = await qrRes.json();
 
-  setDrinks(drinksWithQR);
-}
+          return {
+            ...drink,
+            qr: qrData.qr,
+          };
+        } catch {
+          return drink;
+        }
+      })
+    );
+
+    setDrinks(drinksWithQR);
+  }
+
   async function addDrink() {
     if (!newDrink.name) return;
 
@@ -80,7 +84,7 @@ export default function LagerPage() {
 
     if (!amount) return;
 
-    const drink = drinks.find(d => d.id === id);
+    const drink = drinks.find((d) => d.id === id);
     if (!drink) return;
 
     await fetch(`/api/drinks/${id}`, {
@@ -119,7 +123,6 @@ export default function LagerPage() {
         </h2>
 
         <div className="space-y-3">
-
           <div>
             <label className="block text-sm font-medium">
               Getränkename
@@ -201,7 +204,6 @@ export default function LagerPage() {
           >
             Getränk erstellen
           </button>
-
         </div>
       </section>
 
@@ -220,14 +222,6 @@ export default function LagerPage() {
               ? drink.stock % drink.unitsPerCase
               : drink.stock;
 
-            {drink.qr && (
-              <img
-                src={drink.qr}
-                alt="QR Code"
-                className="w-32 mt-2"
-              />
-            )}
-
           return (
             <div
               key={drink.id}
@@ -244,6 +238,15 @@ export default function LagerPage() {
               <div className="text-xs text-gray-500">
                 = {cases} Kisten + {bottles} Flaschen
               </div>
+
+              {/* QR Code */}
+              {drink.qr && (
+                <img
+                  src={drink.qr}
+                  alt="QR Code"
+                  className="w-32 mt-3"
+                />
+              )}
 
               <div className="flex gap-3 pt-2">
                 <button

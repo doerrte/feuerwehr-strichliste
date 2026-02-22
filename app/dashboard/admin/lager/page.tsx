@@ -14,8 +14,9 @@ export default function LagerPage() {
 
   const [newDrink, setNewDrink] = useState({
     name: "",
-    stock: 0,
-    unitsPerCase: 12,
+    unitsPerCase: "",
+    cases: "",
+    sinlgeBottles: ""
   });
 
   useEffect(() => {
@@ -41,8 +42,8 @@ export default function LagerPage() {
 
     setNewDrink({
       name: "",
-      stock: 0,
-      unitsPerCase: 12,
+      stock: "",
+      unitsPerCase: "",
     });
 
     load();

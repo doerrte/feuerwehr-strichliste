@@ -7,6 +7,7 @@ type Drink = {
   name: string;
   stock: number;
   unitsPerCase: number;
+  qr?: string;
 };
 
 export default function LagerPage() {
@@ -24,10 +25,25 @@ export default function LagerPage() {
   }, []);
 
   async function load() {
-    const res = await fetch("/api/drinks");
-    const data = await res.json();
-    setDrinks(data);
-  }
+  const res = await fetch("/api/drinks");
+  const data = await res.json();
+
+  const drinksWithQR = await Promise.all(
+    data.map(async (drink: Drink) => {
+      const qrRes = await fetch(
+        `/api/drinks/${drink.id}/qr`
+      );
+      const qrData = await qrRes.json();
+
+      return {
+        ...drink,
+        qr: qrData.qr,
+      };
+    })
+  );
+
+  setDrinks(drinksWithQR);
+}
 
   async function addDrink() {
     if (!newDrink.name) return;
@@ -196,6 +212,14 @@ export default function LagerPage() {
             drink.unitsPerCase > 0
               ? drink.stock % drink.unitsPerCase
               : drink.stock;
+
+            {drink.qr && (
+              <img
+                src={drink.qr}
+                alt="QR Code"
+                className="w-32 mt-2"
+              />
+            )}
 
           return (
             <div

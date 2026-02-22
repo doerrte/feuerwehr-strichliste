@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { verifySignature } from "@/lib/qrSignature";
+import { verifySignature } from "@/lib/qr";
 
 type Props = {
   params: { id: string };

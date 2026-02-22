@@ -82,6 +82,9 @@ export default function Navbar() {
           <option value="/dashboard/admin/lager">
             Lager
           </option>
+          <option value="/dashboard/admin/logs">
+            Änderungsprotokoll
+          </option>
           <option value="/dashboard/profile">
             Profil
           </option>
@@ -104,9 +107,6 @@ export default function Navbar() {
           </option>
           <option value="/dashboard/profile">
             Profil
-          </option>
-          <option value="/dashboard/admin/logs">
-            Änderungsprotokoll
           </option>
         </select>
       )}

@@ -44,10 +44,9 @@ export default function DashboardPage() {
     const me = await meRes.json();
     setName(me.name);
 
-    const drinksRes = await fetch(
-      "/api/drinks/me",
-      { credentials: "include" }
-    );
+    const drinksRes = await fetch("/api/drinks/me", {
+      credentials: "include",
+    });
 
     const data = await drinksRes.json();
     setDrinks(data);
@@ -61,13 +60,34 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
-  function changeValue(
-    drinkId: number,
-    value: string
-  ) {
+  function increment(id: number) {
+    const current = Number(draft[id] || 0);
     setDraft((d) => ({
       ...d,
-      [drinkId]: value,
+      [id]: String(current + 1),
+    }));
+  }
+
+  function decrement(id: number) {
+    const current = Number(draft[id] || 0);
+    if (current <= 1) {
+      setDraft((d) => ({
+        ...d,
+        [id]: "",
+      }));
+      return;
+    }
+
+    setDraft((d) => ({
+      ...d,
+      [id]: String(current - 1),
+    }));
+  }
+
+  function changeValue(id: number, value: string) {
+    setDraft((d) => ({
+      ...d,
+      [id]: value,
     }));
   }
 
@@ -86,8 +106,7 @@ export default function DashboardPage() {
       method: "POST",
       credentials: "include",
       headers: {
-        "Content-Type":
-          "application/json",
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         drinkId: confirmDrink.id,
@@ -134,22 +153,16 @@ export default function DashboardPage() {
         {drinks.map((d) => {
           const cases =
             d.unitsPerCase > 0
-              ? Math.floor(
-                  d.stock /
-                    d.unitsPerCase
-                )
+              ? Math.floor(d.stock / d.unitsPerCase)
               : 0;
 
           const bottles =
             d.unitsPerCase > 0
-              ? d.stock %
-                d.unitsPerCase
+              ? d.stock % d.unitsPerCase
               : d.stock;
 
-          const isLow =
-            d.stock <= d.minStock;
-          const isEmpty =
-            d.stock === 0;
+          const isLow = d.stock <= d.minStock;
+          const isEmpty = d.stock === 0;
 
           return (
             <div
@@ -161,8 +174,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="text-sm text-gray-600">
-                Bereits getrunken:{" "}
-                {d.amount} Flaschen
+                Bereits getrunken: {d.amount} Flaschen
               </div>
 
               <div
@@ -188,31 +200,37 @@ export default function DashboardPage() {
               )}
 
               <div className="text-xs text-gray-400">
-                = {cases} Kisten +{" "}
-                {bottles} Flaschen
+                = {cases} Kisten + {bottles} Flaschen
               </div>
 
               <div className="flex gap-2 items-center pt-2">
+                <button
+                  onClick={() => decrement(d.id)}
+                  className="px-2 border rounded"
+                >
+                  –
+                </button>
+
                 <input
                   type="number"
                   min="1"
                   placeholder="Anzahl"
-                  value={
-                    draft[d.id] ?? ""
-                  }
+                  value={draft[d.id] ?? ""}
                   onChange={(e) =>
-                    changeValue(
-                      d.id,
-                      e.target.value
-                    )
+                    changeValue(d.id, e.target.value)
                   }
                   className="w-20 text-center border rounded p-1"
                 />
 
                 <button
-                  onClick={() =>
-                    openConfirm(d)
-                  }
+                  onClick={() => increment(d.id)}
+                  className="px-2 border rounded"
+                >
+                  +
+                </button>
+
+                <button
+                  onClick={() => openConfirm(d)}
                   className="px-3 py-1 bg-green-600 text-white rounded"
                 >
                   Buchen
@@ -233,17 +251,14 @@ export default function DashboardPage() {
             <p className="text-sm">
               Möchtest du wirklich{" "}
               <strong>
-                {confirmAmount}x{" "}
-                {confirmDrink.name}
+                {confirmAmount}x {confirmDrink.name}
               </strong>{" "}
               buchen?
             </p>
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={() =>
-                  setConfirmDrink(null)
-                }
+                onClick={() => setConfirmDrink(null)}
                 className="px-3 py-1 border rounded"
               >
                 Abbrechen

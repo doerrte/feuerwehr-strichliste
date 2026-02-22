@@ -7,42 +7,62 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id           Int      @id @default(autoincrement())
-  name         String
-  phone        String   @unique
-  passwordHash String
-  role         Role     @default(USER)
-  active       Boolean  @default(true)
-  createdAt    DateTime @default(now())
+enum Role {
+  ADMIN
+  USER
+}
 
-  counts       Count[]
+enum LogType {
+  MANUAL
+  QR
+  SYSTEM
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  phone     String   @unique
+  passwordHash String
+  role      Role     @default(USER)
+  active    Boolean  @default(true)
+
+  counts    Count[]
+  logsAsAdmin CountLog[] @relation("AdminLogs")
+  logsAsUser  CountLog[] @relation("UserLogs")
 }
 
 model Drink {
   id            Int      @id @default(autoincrement())
   name          String
-  stock         Int      @default(0)
-  unitsPerCase  Int      @default(0)
-  active        Boolean  @default(true)
-  createdAt     DateTime @default(now())
-
+  stock         Int
+  unitsPerCase  Int
   counts        Count[]
+  logs          CountLog[]
 }
 
 model Count {
   id       Int @id @default(autoincrement())
   userId   Int
   drinkId  Int
-  amount   Int @default(0)
+  amount   Int
 
-  user  User  @relation(fields: [userId], references: [id])
-  drink Drink @relation(fields: [drinkId], references: [id])
+  user   User  @relation(fields: [userId], references: [id])
+  drink  Drink @relation(fields: [drinkId], references: [id])
 
   @@unique([userId, drinkId])
 }
 
-enum Role {
-  ADMIN
-  USER
+model CountLog {
+  id        Int      @id @default(autoincrement())
+  adminId   Int
+  userId    Int
+  drinkId   Int
+  oldAmount Int
+  newAmount Int
+  type      LogType
+  createdAt DateTime @default(now())
+
+  admin  User  @relation("AdminLogs", fields: [adminId], references: [id])
+  user   User  @relation("UserLogs", fields: [userId], references: [id])
+  drink  Drink @relation(fields: [drinkId], references: [id])
 }

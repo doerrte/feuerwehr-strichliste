@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -26,10 +28,7 @@ export default function LoginPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          phone,
-          password,
-        }),
+        body: JSON.stringify({ phone, password }),
       });
 
       const data = await res.json();
@@ -40,10 +39,9 @@ export default function LoginPage() {
         return;
       }
 
-      // 🔥 Wichtig: Nach Login zurück zur Scan-Seite oder Dashboard
       router.replace(redirect);
 
-    } catch (err) {
+    } catch {
       setError("Serverfehler");
       setLoading(false);
     }
@@ -64,9 +62,7 @@ export default function LoginPage() {
             <input
               type="text"
               value={phone}
-              onChange={(e) =>
-                setPhone(e.target.value)
-              }
+              onChange={(e) => setPhone(e.target.value)}
               className="border p-2 rounded w-full"
               required
             />
@@ -79,9 +75,7 @@ export default function LoginPage() {
             <input
               type="password"
               value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
+              onChange={(e) => setPassword(e.target.value)}
               className="border p-2 rounded w-full"
               required
             />

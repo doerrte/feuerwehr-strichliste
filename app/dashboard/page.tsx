@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 type Drink = {
@@ -19,11 +19,15 @@ export default function DashboardPage() {
   const [name, setName] = useState("");
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [draft, setDraft] = useState<Record<number, string>>({});
+  const [flashMessage, setFlashMessage] = useState<string | null>(null);
 
   const [confirmDrink, setConfirmDrink] =
     useState<Drink | null>(null);
   const [confirmAmount, setConfirmAmount] =
     useState<number>(0);
+
+  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const longPressTriggered = useRef(false);
 
   useEffect(() => {
     init();
@@ -60,6 +64,8 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
+  /* ------------------- Normal Buttons ------------------- */
+
   function increment(id: number) {
     const current = Number(draft[id] || 0);
     setDraft((d) => ({
@@ -70,6 +76,7 @@ export default function DashboardPage() {
 
   function decrement(id: number) {
     const current = Number(draft[id] || 0);
+
     if (current <= 1) {
       setDraft((d) => ({
         ...d,
@@ -90,6 +97,46 @@ export default function DashboardPage() {
       [id]: value,
     }));
   }
+
+  /* ------------------- Schnellbuchung ------------------- */
+
+  function handlePressStart(drink: Drink) {
+    longPressTriggered.current = false;
+
+    pressTimer.current = setTimeout(async () => {
+      longPressTriggered.current = true;
+      await quickBook(drink);
+    }, 700);
+  }
+
+  function handlePressEnd() {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+    }
+  }
+
+  async function quickBook(drink: Drink) {
+    if (drink.stock <= 0) return;
+
+    await fetch("/api/drinks/increment", {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        drinkId: drink.id,
+        amount: 1,
+      }),
+    });
+
+    setFlashMessage(`+1 ${drink.name} gebucht`);
+    setTimeout(() => setFlashMessage(null), 1500);
+
+    init();
+  }
+
+  /* ------------------- Modal Buchung ------------------- */
 
   function openConfirm(drink: Drink) {
     const value = Number(draft[drink.id]);
@@ -123,14 +170,8 @@ export default function DashboardPage() {
     return <main className="p-6">Lade...</main>;
   }
 
-  const total = drinks.reduce(
-    (s, d) => s + d.amount,
-    0
-  );
-
-  const hasLowStock = drinks.some(
-    (d) => d.stock <= d.minStock
-  );
+  const total = drinks.reduce((s, d) => s + d.amount, 0);
+  const hasLowStock = drinks.some((d) => d.stock <= d.minStock);
 
   return (
     <main className="p-6 space-y-6">
@@ -145,57 +186,44 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {flashMessage && (
+        <div className="bg-green-100 text-green-800 p-2 rounded text-center">
+          {flashMessage}
+        </div>
+      )}
+
       <div className="text-sm text-gray-600">
         Gesamt getrunken: {total} Flaschen
       </div>
 
       <section className="bg-white p-4 rounded-xl shadow space-y-4">
         {drinks.map((d) => {
-          const cases =
-            d.unitsPerCase > 0
-              ? Math.floor(d.stock / d.unitsPerCase)
-              : 0;
-
-          const bottles =
-            d.unitsPerCase > 0
-              ? d.stock % d.unitsPerCase
-              : d.stock;
-
+          const cases = Math.floor(d.stock / d.unitsPerCase);
+          const bottles = d.stock % d.unitsPerCase;
           const isLow = d.stock <= d.minStock;
           const isEmpty = d.stock === 0;
 
           return (
-            <div
-              key={d.id}
-              className="border rounded p-4 space-y-2"
-            >
-              <div className="font-medium">
-                {d.name}
-              </div>
+            <div key={d.id} className="border rounded p-4 space-y-2">
+              <div className="font-medium">{d.name}</div>
 
               <div className="text-sm text-gray-600">
-                Bereits getrunken: {d.amount} Flaschen
+                Bereits getrunken: {d.amount}
               </div>
 
-              <div
-                className={`text-xs font-medium ${
-                  isLow
-                    ? "text-red-600"
-                    : "text-gray-600"
-                }`}
-              >
-                Lagerbestand: {d.stock} Flaschen
+              <div className={`text-xs font-medium ${isLow ? "text-red-600" : "text-gray-600"}`}>
+                Lagerbestand: {d.stock}
               </div>
 
               {isEmpty && (
                 <div className="text-red-600 text-xs font-semibold">
-                  🔴 Aktuell leer
+                  🔴 Leer
                 </div>
               )}
 
               {!isEmpty && isLow && (
                 <div className="text-yellow-600 text-xs font-semibold">
-                  🟡 Niedriger Bestand
+                  🟡 Niedrig
                 </div>
               )}
 
@@ -216,14 +244,18 @@ export default function DashboardPage() {
                   min="1"
                   placeholder="Anzahl"
                   value={draft[d.id] ?? ""}
-                  onChange={(e) =>
-                    changeValue(d.id, e.target.value)
-                  }
+                  onChange={(e) => changeValue(d.id, e.target.value)}
                   className="w-20 text-center border rounded p-1"
                 />
 
                 <button
-                  onClick={() => increment(d.id)}
+                  onClick={() => {
+                    if (!longPressTriggered.current) increment(d.id);
+                  }}
+                  onMouseDown={() => handlePressStart(d)}
+                  onMouseUp={handlePressEnd}
+                  onTouchStart={() => handlePressStart(d)}
+                  onTouchEnd={handlePressEnd}
                   className="px-2 border rounded"
                 >
                   +
@@ -274,7 +306,6 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-
     </main>
   );
 }

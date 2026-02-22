@@ -1,14 +1,18 @@
 import crypto from "crypto";
 
-const SECRET = process.env.QR_SECRET;
+function getSecret() {
+  const secret = process.env.QR_SECRET;
 
-if (!SECRET) {
-  throw new Error("QR_SECRET fehlt");
+  if (!secret) {
+    throw new Error("QR_SECRET fehlt in Environment Variables");
+  }
+
+  return secret;
 }
 
 export function createSignature(drinkId: number) {
   return crypto
-    .createHmac("sha256", SECRET)
+    .createHmac("sha256", getSecret())
     .update(String(drinkId))
     .digest("hex");
 }

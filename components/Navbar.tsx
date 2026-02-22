@@ -105,6 +105,9 @@ export default function Navbar() {
           <option value="/dashboard/profile">
             Profil
           </option>
+          <option value="/dashboard/admin/logs">
+            Änderungsprotokoll
+          </option>
         </select>
       )}
 

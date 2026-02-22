@@ -1,22 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-  const userId = request.cookies.get("userId")?.value;
-  const isLogin = request.nextUrl.pathname === "/login";
+export function middleware(req: NextRequest) {
+  const userId = req.cookies.get("userId");
 
-  if (!userId && !isLogin) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  if (userId && isLogin) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+  if (!userId && req.nextUrl.pathname.startsWith("/dashboard")) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login"],
+  matcher: ["/dashboard/:path*"],
 };
- 

@@ -19,16 +19,17 @@ enum LogType {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  phone     String   @unique
-  passwordHash String
-  role      Role     @default(USER)
-  active    Boolean  @default(true)
+  id            Int      @id @default(autoincrement())
+  name          String
+  phone         String   @unique
+  passwordHash  String
+  role          Role     @default(USER)
+  hasSeenIntro  Boolean  @default(false)
+  active        Boolean  @default(true)
 
-  counts    Count[]
-  logsAsAdmin CountLog[] @relation("AdminLogs")
-  logsAsUser  CountLog[] @relation("UserLogs")
+  counts        Count[]
+  logsAsAdmin   CountLog[] @relation("AdminLogs")
+  logsAsUser    CountLog[] @relation("UserLogs")
 }
 
 model Drink {

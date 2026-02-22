@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-const SECRET = process.env.QR_SECRET;
+const SECRET = process.env.QR_SECRET as string;
 
 if (!SECRET) {
   throw new Error("QR_SECRET fehlt");

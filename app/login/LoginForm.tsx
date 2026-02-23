@@ -37,8 +37,8 @@ export default function LoginForm() {
         return;
       }
 
-      router.replace(data.redirect);
-
+      window.location.href = data.redirect;
+      
     } catch {
       setError("Serverfehler");
       setLoading(false);

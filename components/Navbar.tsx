@@ -39,7 +39,7 @@ export default function Navbar({ role }: Props) {
   }
 
   return (
-  <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-100 max-w-lg px-4 z-40">
+  <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-full max-w-lg px-4 z-40">
 
     <div className="
       flex items-center gap-6

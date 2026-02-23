@@ -9,11 +9,15 @@ import Navbar from "@/components/Navbar";
 
 export const metadata = {
   title: "Feuerwehr Getränke",
-  description: "Strichliste App",
+  description: "Strichlisten App",
 };
 
 export const viewport = {
   themeColor: "#000000",
+};
+
+export const other = {
+  "mobile-web-app-capable": "yes",
 };
 
 export default async function RootLayout({

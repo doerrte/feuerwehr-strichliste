@@ -1,11 +1,18 @@
-import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
+import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
   try {
     const { phone, password } = await req.json();
+
+    if (!phone || !password) {
+      return NextResponse.json(
+        { error: "Fehlende Daten" },
+        { status: 400 }
+      );
+    }
 
     const user = await prisma.user.findUnique({
       where: { phone },
@@ -18,6 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // 🔒 Gelöscht?
     if (user.deletedAt) {
       return NextResponse.json(
         { error: "Benutzer wurde gelöscht" },
@@ -25,6 +33,7 @@ export async function POST(req: Request) {
       );
     }
 
+    // 🔒 Deaktiviert?
     if (!user.active) {
       return NextResponse.json(
         { error: "Benutzer ist deaktiviert" },
@@ -44,17 +53,24 @@ export async function POST(req: Request) {
       );
     }
 
-    cookies().set("userId", String(user.id), {
-      httpOnly: true,
-      secure: true,
-      sameSite: "lax",
-      path: "/",
+    const response = NextResponse.json({
+      success: true,
+      role: user.role,
     });
 
-    return NextResponse.json({ success: true });
-  } catch (err) {
+    response.cookies.set("userId", String(user.id), {
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+      secure: true,
+    });
+
+    return response;
+
+  } catch (error) {
+    console.error("LOGIN ERROR:", error);
     return NextResponse.json(
-      { error: "Login Fehler" },
+      { error: "Serverfehler" },
       { status: 500 }
     );
   }

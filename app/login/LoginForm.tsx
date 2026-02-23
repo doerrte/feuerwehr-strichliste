@@ -73,7 +73,7 @@ export default function LoginForm() {
               Telefonnummer
             </label>
             <input
-              type="text"
+              type="number"
               value={phone}
               onChange={(e) =>
                 setPhone(e.target.value)
@@ -107,13 +107,16 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded"
+            className="w-full bg-red-600 text-white py-2 rounded"
           >
             {loading
               ? "Bitte warten..."
               : "Einloggen"}
           </button>
         </form>
+        <p className="text-center"><strong>Du hast dein Passwort vergessen?</strong><br />
+        Dann wende dich bitte an den Getränkewart
+        </p>
       </div>
     </main>
   );

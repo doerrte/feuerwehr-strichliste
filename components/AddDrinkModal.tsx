@@ -9,12 +9,16 @@ export default function AddDrinkModal({
   onClose: () => void;
   onCreated: () => void;
 }) {
-  const [name, setName] = useState<string>("");
-  const [unitsPerCase, setUnitsPerCase] = useState<number>(12);
-  const [cases, setCases] = useState<number>(0);
-  const [bottles, setBottles] = useState<number>(0);
-  const [minStock, setMinStock] = useState<number>(0);
-  const [error, setError] = useState<string>("");
+  const [name, setName] = useState("");
+  const [unitsPerCase, setUnitsPerCase] = useState("");
+  const [cases, setCases] = useState("");
+  const [bottles, setBottles] = useState("");
+  const [minStock, setMinStock] = useState("");
+  const [error, setError] = useState("");
+
+  function getNumber(value: string) {
+    return value ? Number(value) : 0;
+  }
 
   async function handleCreate() {
     if (!name.trim()) {
@@ -22,9 +26,12 @@ export default function AddDrinkModal({
       return;
     }
 
-    const total =
-      Number(cases) * Number(unitsPerCase) +
-      Number(bottles);
+    const units = getNumber(unitsPerCase);
+    const caseCount = getNumber(cases);
+    const bottleCount = getNumber(bottles);
+    const min = getNumber(minStock);
+
+    const total = caseCount * units + bottleCount;
 
     const res = await fetch("/api/drinks", {
       method: "POST",
@@ -33,9 +40,9 @@ export default function AddDrinkModal({
       },
       body: JSON.stringify({
         name: name.trim(),
-        unitsPerCase: Number(unitsPerCase),
+        unitsPerCase: units,
         stock: total,
-        minStock: Number(minStock),
+        minStock: min,
       }),
     });
 
@@ -48,6 +55,10 @@ export default function AddDrinkModal({
 
     onCreated();
   }
+
+  const previewTotal =
+    getNumber(cases) * getNumber(unitsPerCase) +
+    getNumber(bottles);
 
   return (
     <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
@@ -69,9 +80,7 @@ export default function AddDrinkModal({
           type="number"
           placeholder="Flaschen pro Kiste"
           value={unitsPerCase}
-          onChange={(e) =>
-            setUnitsPerCase(Number(e.target.value))
-          }
+          onChange={(e) => setUnitsPerCase(e.target.value)}
           className="w-full border p-3 rounded-xl"
         />
 
@@ -79,9 +88,7 @@ export default function AddDrinkModal({
           type="number"
           placeholder="Anzahl Kisten"
           value={cases}
-          onChange={(e) =>
-            setCases(Number(e.target.value))
-          }
+          onChange={(e) => setCases(e.target.value)}
           className="w-full border p-3 rounded-xl"
         />
 
@@ -89,9 +96,7 @@ export default function AddDrinkModal({
           type="number"
           placeholder="Einzelflaschen"
           value={bottles}
-          onChange={(e) =>
-            setBottles(Number(e.target.value))
-          }
+          onChange={(e) => setBottles(e.target.value)}
           className="w-full border p-3 rounded-xl"
         />
 
@@ -99,18 +104,12 @@ export default function AddDrinkModal({
           type="number"
           placeholder="Mindestbestand"
           value={minStock}
-          onChange={(e) =>
-            setMinStock(Number(e.target.value))
-          }
+          onChange={(e) => setMinStock(e.target.value)}
           className="w-full border p-3 rounded-xl"
         />
 
         <div className="text-sm text-gray-500">
-          Gesamt:{" "}
-          <strong>
-            {cases * unitsPerCase + bottles}
-          </strong>{" "}
-          Flaschen
+          Gesamt: <strong>{previewTotal}</strong> Flaschen
         </div>
 
         {error && (
@@ -136,7 +135,6 @@ export default function AddDrinkModal({
         </div>
 
       </div>
-
     </div>
   );
 }

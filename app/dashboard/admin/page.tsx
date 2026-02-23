@@ -11,10 +11,16 @@ type User = {
   deletedAt: string | null;
 };
 
+type ActionType =
+  | "activate"
+  | "deactivate"
+  | "delete"
+  | "restore";
+
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [confirmUser, setConfirmUser] = useState<User | null>(null);
-  const [actionType, setActionType] = useState<string>("");
+  const [actionType, setActionType] = useState<ActionType | null>(null);
 
   useEffect(() => {
     loadUsers();
@@ -27,7 +33,7 @@ export default function AdminPage() {
   }
 
   async function executeAction() {
-    if (!confirmUser) return;
+    if (!confirmUser || !actionType) return;
 
     await fetch("/api/admin/users/manage", {
       method: "POST",
@@ -41,24 +47,24 @@ export default function AdminPage() {
     });
 
     setConfirmUser(null);
+    setActionType(null);
     loadUsers();
   }
 
   const activeUsers = users.filter(
-    u => u.active && !u.deletedAt
+    (u) => u.active && !u.deletedAt
   );
 
   const inactiveUsers = users.filter(
-    u => !u.active && !u.deletedAt
+    (u) => !u.active && !u.deletedAt
   );
 
   const deletedUsers = users.filter(
-    u => u.deletedAt
+    (u) => u.deletedAt
   );
 
   return (
     <div className="space-y-10">
-
       <h1 className="text-2xl font-semibold">
         👥 Benutzerverwaltung
       </h1>
@@ -66,7 +72,7 @@ export default function AdminPage() {
       <UserSection
         title="Aktive Benutzer"
         users={activeUsers}
-        onAction={(user, action) => {
+        onAction={(user: User, action: ActionType) => {
           setConfirmUser(user);
           setActionType(action);
         }}
@@ -75,7 +81,7 @@ export default function AdminPage() {
       <UserSection
         title="Deaktivierte Benutzer"
         users={inactiveUsers}
-        onAction={(user, action) => {
+        onAction={(user: User, action: ActionType) => {
           setConfirmUser(user);
           setActionType(action);
         }}
@@ -85,13 +91,13 @@ export default function AdminPage() {
         title="Gelöschte Benutzer"
         users={deletedUsers}
         isDeleted
-        onAction={(user, action) => {
+        onAction={(user: User, action: ActionType) => {
           setConfirmUser(user);
           setActionType(action);
         }}
       />
 
-      {confirmUser && (
+      {confirmUser && actionType && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-6">
           <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
             <h2 className="text-lg font-semibold text-center">
@@ -104,7 +110,10 @@ export default function AdminPage() {
 
             <div className="flex gap-3 pt-2">
               <button
-                onClick={() => setConfirmUser(null)}
+                onClick={() => {
+                  setConfirmUser(null);
+                  setActionType(null);
+                }}
                 className="flex-1 py-2 rounded-xl bg-gray-200"
               >
                 Abbrechen
@@ -120,24 +129,30 @@ export default function AdminPage() {
           </div>
         </div>
       )}
-
     </div>
   );
 }
+
+type UserSectionProps = {
+  title: string;
+  users: User[];
+  onAction: (user: User, action: ActionType) => void;
+  isDeleted?: boolean;
+};
 
 function UserSection({
   title,
   users,
   onAction,
   isDeleted,
-}: any) {
+}: UserSectionProps) {
   if (!users.length) return null;
 
   return (
     <div className="space-y-4">
       <h2 className="font-medium text-lg">{title}</h2>
 
-      {users.map((user: any) => (
+      {users.map((user) => (
         <div
           key={user.id}
           className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-5 shadow-lg border flex justify-between items-center"
@@ -149,15 +164,16 @@ function UserSection({
             <div className="text-sm text-gray-500">
               {user.phone}
             </div>
+
             {user.deletedAt && (
               <div className="text-xs text-red-500">
-                gelöscht am {new Date(user.deletedAt).toLocaleDateString()}
+                gelöscht am{" "}
+                {new Date(user.deletedAt).toLocaleDateString()}
               </div>
             )}
           </div>
 
           <div className="flex gap-2">
-
             {!isDeleted && (
               <>
                 <button
@@ -171,7 +187,9 @@ function UserSection({
                   }
                   className="px-3 py-1 rounded-xl bg-gray-200 text-sm"
                 >
-                  {user.active ? "Deaktivieren" : "Aktivieren"}
+                  {user.active
+                    ? "Deaktivieren"
+                    : "Aktivieren"}
                 </button>
 
                 <button
@@ -195,7 +213,6 @@ function UserSection({
                 Wiederherstellen
               </button>
             )}
-
           </div>
         </div>
       ))}

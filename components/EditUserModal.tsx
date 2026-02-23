@@ -1,61 +1,132 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
-import { hashPin } from "@/lib/hash";
+"use client";
 
-export async function POST(req: Request) {
-  try {
-    const cookieStore = cookies();
-    const userId = cookieStore.get("userId")?.value;
+import { useState } from "react";
 
-    if (!userId) {
-      return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
-    }
+type User = {
+  id: number;
+  name: string;
+  phone: string;
+  role: "USER" | "ADMIN";
+};
 
-    const admin = await prisma.user.findUnique({
-      where: { id: Number(userId) },
+export default function EditUserModal({
+  user,
+  onClose,
+  onUpdated,
+}: {
+  user: User;
+  onClose: () => void;
+  onUpdated: () => void;
+}) {
+  const [name, setName] = useState(user.name);
+  const [phone, setPhone] = useState(user.phone);
+  const [pin, setPin] = useState("");
+  const [role, setRole] = useState(user.role);
+  const [error, setError] = useState("");
+
+  async function handleSave() {
+    if (!confirm("Änderungen speichern?")) return;
+
+    const res = await fetch("/api/admin/users/update", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        id: user.id,
+        name,
+        phone,
+        pin,
+        role,
+      }),
     });
 
-    if (!admin || admin.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Fehler");
+      return;
     }
 
-    const { id, name, phone, pin, role } = await req.json();
-
-    if (!id || !name || !phone) {
-      return NextResponse.json({ error: "Fehlende Daten" }, { status: 400 });
-    }
-
-    const existing = await prisma.user.findUnique({
-      where: { phone },
-    });
-
-    if (existing && existing.id !== id) {
-      return NextResponse.json(
-        { error: "Telefonnummer bereits vergeben" },
-        { status: 400 }
-      );
-    }
-
-    const updateData: any = {
-      name: name.trim(),
-      phone: phone.trim(),
-      role,
-    };
-
-    if (pin && pin.length > 0) {
-      updateData.passwordHash = await hashPin(pin);
-    }
-
-    await prisma.user.update({
-      where: { id },
-      data: updateData,
-    });
-
-    return NextResponse.json({ ok: true });
-
-  } catch (error) {
-    console.error("UPDATE USER ERROR:", error);
-    return NextResponse.json({ error: "Serverfehler" }, { status: 500 });
+    onUpdated();
   }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
+
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+
+        <h2 className="text-xl font-semibold">
+          Benutzer bearbeiten
+        </h2>
+
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="w-full border p-3 rounded-xl"
+        />
+
+        <input
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          className="w-full border p-3 rounded-xl"
+        />
+
+        <input
+          type="password"
+          placeholder="Neue PIN (optional)"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          className="w-full border p-3 rounded-xl"
+        />
+
+        <div className="flex gap-3">
+          <button
+            onClick={() => setRole("USER")}
+            className={`flex-1 py-2 rounded-xl ${
+              role === "USER"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700"
+            }`}
+          >
+            USER
+          </button>
+
+          <button
+            onClick={() => setRole("ADMIN")}
+            className={`flex-1 py-2 rounded-xl ${
+              role === "ADMIN"
+                ? "bg-red-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700"
+            }`}
+          >
+            ADMIN
+          </button>
+        </div>
+
+        {error && (
+          <div className="text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-2">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2 rounded-xl bg-gray-200 dark:bg-gray-700"
+          >
+            Abbrechen
+          </button>
+
+          <button
+            onClick={handleSave}
+            className="flex-1 py-2 rounded-xl bg-green-600 text-white"
+          >
+            Speichern
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
 }

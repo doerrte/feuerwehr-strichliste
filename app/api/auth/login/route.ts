@@ -51,9 +51,11 @@ export async function POST(req: Request) {
 
     response.cookies.set("userId", String(user.id), {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
       path: "/",
+      maxAge: 60 * 60 * 24 * 30, // 30 Tage
+      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
     });
 
     return response;

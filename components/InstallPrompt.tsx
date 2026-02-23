@@ -3,13 +3,12 @@
 import { useEffect, useState } from "react";
 
 export default function InstallPrompt() {
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<any>(null);
   const [show, setShow] = useState(false);
-  const [browser, setBrowser] = useState<
-    "ios" | "android" | null
-  >(null);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
-    // Schon gesehen?
     const seen = localStorage.getItem(
       "installPromptSeen"
     );
@@ -17,29 +16,51 @@ export default function InstallPrompt() {
 
     const ua = navigator.userAgent;
 
-    const isIOS =
+    const ios =
       /iPhone|iPad|iPod/.test(ua);
-    const isAndroid =
+    const android =
       /Android/.test(ua);
 
-    const isInStandalone =
+    const isStandalone =
       window.matchMedia(
         "(display-mode: standalone)"
       ).matches ||
       // @ts-ignore
       window.navigator.standalone === true;
 
-    // Wenn bereits als App installiert → nichts anzeigen
-    if (isInStandalone) return;
+    if (isStandalone) return;
 
-    if (isIOS) {
-      setBrowser("ios");
-      setShow(true);
-    } else if (isAndroid) {
-      setBrowser("android");
+    if (ios) {
+      setIsIOS(true);
       setShow(true);
     }
+
+    window.addEventListener(
+      "beforeinstallprompt",
+      (e: any) => {
+        e.preventDefault();
+        setDeferredPrompt(e);
+        setShow(true);
+      }
+    );
   }, []);
+
+  async function installApp() {
+    if (!deferredPrompt) return;
+
+    deferredPrompt.prompt();
+
+    const choice =
+      await deferredPrompt.userChoice;
+
+    if (choice.outcome === "accepted") {
+      localStorage.setItem(
+        "installPromptSeen",
+        "true"
+      );
+      setShow(false);
+    }
+  }
 
   function close() {
     localStorage.setItem(
@@ -52,57 +73,45 @@ export default function InstallPrompt() {
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
-      <div className="bg-white rounded-xl shadow-xl p-6 max-w-sm w-full space-y-4">
+    <div className="fixed bottom-4 left-4 right-4 bg-white shadow-xl rounded-xl p-4 z-50">
+      <div className="flex justify-between items-center">
 
-        <h2 className="text-lg font-bold text-center">
-          📲 App installieren
-        </h2>
-
-        {browser === "ios" && (
-          <div className="text-sm space-y-2">
-            <p>
-              Öffne diese Seite in{" "}
-              <strong>Safari</strong>.
-            </p>
-            <p>
-              Tippe unten auf das{" "}
-              <strong>Teilen-Symbol</strong>.
-            </p>
-            <p>
-              Wähle{" "}
-              <strong>
-                „Zum Home-Bildschirm“
-              </strong>.
-            </p>
+        <div className="text-sm">
+          <div className="font-semibold">
+            📲 App installieren
           </div>
-        )}
 
-        {browser === "android" && (
-          <div className="text-sm space-y-2">
-            <p>
-              Öffne diese Seite in{" "}
-              <strong>Chrome</strong>.
-            </p>
-            <p>
-              Tippe oben rechts auf die{" "}
-              <strong>3 Punkte</strong>.
-            </p>
-            <p>
-              Wähle{" "}
-              <strong>
-                „Zum Startbildschirm hinzufügen“
-              </strong>.
-            </p>
-          </div>
-        )}
+          {isIOS ? (
+            <div>
+              Öffne in Safari → Teilen →
+              „Zum Home-Bildschirm“
+            </div>
+          ) : (
+            <div>
+              Installiere die App für
+              schnelleren Zugriff.
+            </div>
+          )}
+        </div>
 
-        <button
-          onClick={close}
-          className="w-full bg-blue-600 text-white py-2 rounded"
-        >
-          Verstanden
-        </button>
+        <div className="flex gap-2">
+          {!isIOS && deferredPrompt && (
+            <button
+              onClick={installApp}
+              className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
+            >
+              Installieren
+            </button>
+          )}
+
+          <button
+            onClick={close}
+            className="text-gray-500 text-sm"
+          >
+            ✕
+          </button>
+        </div>
+
       </div>
     </div>
   );

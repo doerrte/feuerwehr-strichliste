@@ -2,86 +2,67 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-async function requireAdmin() {
-  const cookieStore = cookies();
-  const userId = cookieStore.get("userId")?.value;
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-  if (!userId) return null;
+async function requireAdmin() {
+  const userIdRaw = cookies().get("userId")?.value;
+  if (!userIdRaw) return false;
 
   const user = await prisma.user.findUnique({
-    where: { id: Number(userId) },
-    select: { role: true },
+    where: { id: Number(userIdRaw) },
   });
 
-  if (!user || user.role !== "ADMIN") return null;
-
-  return Number(userId);
+  return user?.role === "ADMIN" && user.active;
 }
 
-export async function GET(req: Request) {
-  const adminId = await requireAdmin();
+export async function GET() {
+  try {
+    if (!(await requireAdmin())) {
+      return NextResponse.json(
+        { error: "Nicht erlaubt" },
+        { status: 403 }
+      );
+    }
 
-  if (!adminId) {
-    return NextResponse.json(
-      { error: "Nicht erlaubt" },
-      { status: 403 }
-    );
-  }
-
-  const { searchParams } = new URL(req.url);
-  const selectedUserId = Number(searchParams.get("userId"));
-
-  if (!selectedUserId) {
-    return NextResponse.json([]);
-  }
-
-  const drinks = await prisma.drink.findMany({
-    orderBy: { name: "asc" },
-    include: {
-      counts: {
-        where: {
-          userId: selectedUserId,
+    const users = await prisma.user.findMany({
+      where: { active: true },
+      include: {
+        counts: {
+          include: {
+            drink: true,
+          },
         },
       },
-    },
-  });
+      orderBy: { name: "asc" },
+    });
 
-  const result = drinks.map((d) => ({
-    id: d.id,
-    name: d.name,
-    amount: d.counts[0]?.amount ?? 0,
-  }));
+    const result = users.map((user) => {
+      const total = user.counts.reduce(
+        (sum, c) => sum + c.amount,
+        0
+      );
 
-  return NextResponse.json(result);
-}
+      return {
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        total,
+        drinks: user.counts.map((c) => ({
+          drinkId: c.drinkId,
+          drinkName: c.drink.name,
+          amount: c.amount,
+        })),
+      };
+    });
 
-export async function PUT(req: Request) {
-  const adminId = await requireAdmin();
+    return NextResponse.json(result);
 
-  if (!adminId) {
+  } catch (error) {
+    console.error("STRICHLISTE ERROR:", error);
     return NextResponse.json(
-      { error: "Nicht erlaubt" },
-      { status: 403 }
+      { error: "Serverfehler" },
+      { status: 500 }
     );
   }
-
-  const { userId: targetUserId, drinkId, amount } =
-    await req.json();
-
-  await prisma.count.upsert({
-    where: {
-      userId_drinkId: {
-        userId: targetUserId,
-        drinkId,
-      },
-    },
-    update: { amount },
-    create: {
-      userId: targetUserId,
-      drinkId,
-      amount,
-    },
-  });
-
-  return NextResponse.json({ success: true });
 }

@@ -1,23 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+
+type User = {
+  name: string;
+  phone: string;
+};
 
 export default function ProfilePage() {
-  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
 
-  const [name, setName] = useState("");
-  const [loading, setLoading] = useState(true);
-
+  const [phone, setPhone] = useState("");
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
 
-  const [showOld, setShowOld] = useState(false);
-  const [showNew, setShowNew] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
-
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [message, setMessage] = useState("");
 
   useEffect(() => {
     loadUser();
@@ -28,43 +25,23 @@ export default function ProfilePage() {
       credentials: "include",
     });
 
-    if (!res.ok) {
-      router.replace("/login");
-      return;
+    if (res.ok) {
+      const data = await res.json();
+      setUser(data);
+      setPhone(data.phone);
     }
-
-    const data = await res.json();
-    setName(data.name);
-    setLoading(false);
   }
 
-  function openConfirm() {
-    if (!oldPassword) {
-      alert("Bitte altes Passwort eingeben");
-      return;
-    }
+  async function handleSave() {
+    setMessage("");
 
-    if (!newPassword || newPassword.length < 4) {
-      alert("Neues Passwort muss mindestens 4 Zeichen haben");
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      alert("Neue Passwörter stimmen nicht überein");
-      return;
-    }
-
-    setShowConfirmModal(true);
-  }
-
-  async function changePassword() {
-    const res = await fetch("/api/users/change-password", {
+    const res = await fetch("/api/profile/update", {
       method: "POST",
-      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
+        phone,
         oldPassword,
         newPassword,
       }),
@@ -73,134 +50,95 @@ export default function ProfilePage() {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.error || "Fehler");
+      setMessage(data.error);
       return;
     }
 
-    alert("Passwort erfolgreich geändert");
-
+    setMessage("Änderungen gespeichert ✅");
     setOldPassword("");
     setNewPassword("");
-    setConfirmPassword("");
-    setShowConfirmModal(false);
   }
 
-  if (loading) {
-    return <main className="p-6">Lade...</main>;
-  }
+  if (!user) return null;
 
   return (
-    <main className="p-6 space-y-6">
-      <h1 className="text-xl font-bold">
-        Profil von {name}
-      </h1>
+    <div className="space-y-8">
 
-      <section className="bg-white p-4 rounded-xl shadow space-y-4">
+      <div>
+        <h1 className="text-2xl font-semibold">
+          👤 Profil
+        </h1>
+        <p className="text-sm text-gray-500">
+          Persönliche Einstellungen
+        </p>
+      </div>
 
-        {/* Altes Passwort */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium">
-            Altes Passwort
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-6 shadow-lg border space-y-6">
+
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Name
           </label>
-          <div className="flex">
-            <input
-              type={showOld ? "text" : "password"}
-              value={oldPassword}
-              onChange={(e) => setOldPassword(e.target.value)}
-              className="w-full border p-2 rounded-l"
-            />
-            <button
-              type="button"
-              onClick={() => setShowOld(!showOld)}
-              className="px-3 border rounded-r bg-gray-100"
-            >
-              👁
-            </button>
-          </div>
+          <input
+            value={user.name}
+            disabled
+            className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+          />
         </div>
 
-        {/* Neues Passwort */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium">
-            Neues Passwort
+        <div>
+          <label className="block text-sm font-medium mb-1">
+            Telefonnummer
           </label>
-          <div className="flex">
-            <input
-              type={showNew ? "text" : "password"}
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full border p-2 rounded-l"
-            />
-            <button
-              type="button"
-              onClick={() => setShowNew(!showNew)}
-              className="px-3 border rounded-r bg-gray-100"
-            >
-              👁
-            </button>
-          </div>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full p-3 rounded-xl border bg-transparent"
+          />
         </div>
 
-        {/* Wiederholen */}
-        <div className="space-y-1">
-          <label className="text-sm font-medium">
-            Neues Passwort wiederholen
-          </label>
-          <div className="flex">
-            <input
-              type={showConfirmPw ? "text" : "password"}
-              value={confirmPassword}
-              onChange={(e) =>
-                setConfirmPassword(e.target.value)
-              }
-              className="w-full border p-2 rounded-l"
-            />
-            <button
-              type="button"
-              onClick={() =>
-                setShowConfirmPw(!showConfirmPw)
-              }
-              className="px-3 border rounded-r bg-gray-100"
-            >
-              👁
-            </button>
-          </div>
+        <div className="pt-4 border-t space-y-4">
+
+          <h2 className="font-medium">
+            Passwort ändern
+          </h2>
+
+          <input
+            type="password"
+            placeholder="Altes Passwort"
+            value={oldPassword}
+            onChange={(e) =>
+              setOldPassword(e.target.value)
+            }
+            className="w-full p-3 rounded-xl border bg-transparent"
+          />
+
+          <input
+            type="password"
+            placeholder="Neues Passwort"
+            value={newPassword}
+            onChange={(e) =>
+              setNewPassword(e.target.value)
+            }
+            className="w-full p-3 rounded-xl border bg-transparent"
+          />
         </div>
+
+        {message && (
+          <div className="text-sm text-blue-600">
+            {message}
+          </div>
+        )}
 
         <button
-          onClick={openConfirm}
-          className="w-full bg-green-600 text-white py-2 rounded"
+          onClick={handleSave}
+          className="w-full py-3 rounded-2xl bg-blue-600 text-white font-medium shadow-md"
         >
-          Passwort ändern
+          Änderungen speichern
         </button>
-      </section>
 
-      {/* 🔥 Bestätigungs-Modal */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl shadow space-y-4 w-80">
-            <h2 className="font-bold text-lg">
-              Passwort wirklich ändern?
-            </h2>
+      </div>
 
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowConfirmModal(false)}
-                className="px-3 py-1 border rounded"
-              >
-                Abbrechen
-              </button>
-
-              <button
-                onClick={changePassword}
-                className="px-3 py-1 bg-green-600 text-white rounded"
-              >
-                Ja, ändern
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
+    </div>
   );
 }

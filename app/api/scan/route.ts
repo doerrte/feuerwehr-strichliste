@@ -2,67 +2,83 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
-    const userId = Number(cookies().get("userId")?.value);
+    const cookieStore = cookies();
+    const userIdRaw = cookieStore.get("userId")?.value;
 
-    if (!userId) {
+    if (!userIdRaw) {
       return NextResponse.json(
         { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
 
-    const { drinkId } = await req.json();
+    const userId = Number(userIdRaw);
 
-    if (!drinkId) {
-      return NextResponse.json(
-        { error: "Kein Getränk angegeben" },
-        { status: 400 }
-      );
-    }
+    const { drinkId, amount } = await req.json();
 
     const drink = await prisma.drink.findUnique({
-      where: { id: Number(drinkId) },
+      where: { id: drinkId },
     });
 
     if (!drink) {
       return NextResponse.json(
-        { error: "Getränk nicht verfügbar" },
+        { error: "Getränk nicht gefunden" },
         { status: 404 }
       );
     }
 
-    if (drink.stock <= 0) {
+    const bookingAmount = Number(amount);
+
+    if (!bookingAmount || bookingAmount <= 0) {
       return NextResponse.json(
-        { error: "Kein Lagerbestand mehr" },
+        { error: "Ungültige Menge" },
         { status: 400 }
       );
     }
 
-    await prisma.drink.update({
-      where: { id: drink.id },
-      data: {
-        stock: { decrement: 1 },
-      },
-    });
+    if (drink.stock < bookingAmount) {
+      return NextResponse.json(
+        { error: "Nicht genügend Bestand" },
+        { status: 400 }
+      );
+    }
 
-    await prisma.count.upsert({
-      where: {
-        userId_drinkId: {
-          userId,
-          drinkId: drink.id,
+    await prisma.$transaction([
+
+      prisma.count.upsert({
+        where: {
+          userId_drinkId: {
+            userId,
+            drinkId,
+          },
         },
-      },
-      update: {
-        amount: { increment: 1 },
-      },
-      create: {
-        userId,
-        drinkId: drink.id,
-        amount: 1,
-      },
-    });
+        update: {
+          amount: {
+            increment: bookingAmount,
+          },
+        },
+        create: {
+          userId,
+          drinkId,
+          amount: bookingAmount,
+        },
+      }),
+
+      prisma.drink.update({
+        where: { id: drinkId },
+        data: {
+          stock: {
+            decrement: bookingAmount,
+          },
+        },
+      }),
+
+    ]);
 
     return NextResponse.json({ success: true });
 

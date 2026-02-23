@@ -7,10 +7,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Role {
-  ADMIN
-  USER
-}
 
 enum LogType {
   MANUAL
@@ -19,17 +15,23 @@ enum LogType {
 }
 
 model User {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   name          String
-  phone         String   @unique
+  phone         String    @unique
   passwordHash  String
-  role          Role     @default(USER)
-  hasSeenIntro  Boolean  @default(false)
-  active        Boolean  @default(true)
+  role          Role      @default(USER)
+  hasSeenIntro  Boolean   @default(false)
+  active        Boolean   @default(true)
+  deletedAt     DateTime?
 
   counts        Count[]
   logsAsAdmin   CountLog[] @relation("AdminLogs")
   logsAsUser    CountLog[] @relation("UserLogs")
+}
+
+enum Role {
+  USER
+  ADMIN
 }
 
 model Drink {

@@ -1,17 +1,19 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
-  const response = NextResponse.json({ success: true });
+  try {
+    cookies().delete("userId");
 
-  response.cookies.set("userId", "", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 0,
-  });
-
-  return response;
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("LOGOUT ERROR:", error);
+    return NextResponse.json(
+      { error: "Serverfehler" },
+      { status: 500 }
+    );
+  }
 }

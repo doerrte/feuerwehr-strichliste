@@ -1,10 +1,11 @@
-import { Suspense } from "react";
+"use client";
+
 import LoginForm from "./LoginForm";
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="p-6">Lade...</div>}>
+    <div className="h-full flex items-center justify-center">
       <LoginForm />
-    </Suspense>
+    </div>
   );
 }

@@ -1,367 +1,224 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 type Drink = {
   id: number;
   name: string;
   amount: number;
   stock: number;
-  unitsPerCase: number;
   minStock: number;
+  unitsPerCase: number;
+};
+
+type User = {
+  name: string;
 };
 
 export default function DashboardPage() {
-  const router = useRouter();
-
-  const [loading, setLoading] = useState(true);
-  const [name, setName] = useState("");
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [draft, setDraft] = useState<Record<number, string>>({});
-  const [flashMessage, setFlashMessage] = useState<string | null>(null);
-
-  const [confirmDrink, setConfirmDrink] =
-    useState<Drink | null>(null);
-  const [confirmAmount, setConfirmAmount] =
-    useState<number>(0);
-
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
-  const longPressTriggered = useRef(false);
+  const [inputs, setInputs] = useState<Record<number, string>>({});
+  const [confirmDrink, setConfirmDrink] = useState<Drink | null>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    init();
+    load();
+    loadUser();
   }, []);
 
-  async function init() {
-    setLoading(true);
-
-    const meRes = await fetch("/api/auth/me", {
+  async function load() {
+    const res = await fetch("/api/drinks/me", {
       credentials: "include",
     });
-
-    if (!meRes.ok) {
-      router.replace("/login");
-      return;
-    }
-
-    const me = await meRes.json();
-    setName(me.name);
-
-    const drinksRes = await fetch("/api/drinks/me", {
-      credentials: "include",
-    });
-
-    const data = await drinksRes.json();
+    const data = await res.json();
     setDrinks(data);
-
-    const nextDraft: Record<number, string> = {};
-    data.forEach((d: Drink) => {
-      nextDraft[d.id] = "";
-    });
-
-    setDraft(nextDraft);
-    setLoading(false);
   }
 
-  /* ---------------- NORMAL STEPPER ---------------- */
-
-  function increment(id: number) {
-    const current = Number(draft[id] || 0);
-    setDraft((d) => ({
-      ...d,
-      [id]: String(current + 1),
-    }));
-  }
-
-  function decrement(id: number) {
-    const current = Number(draft[id] || 0);
-
-    if (current <= 1) {
-      setDraft((d) => ({
-        ...d,
-        [id]: "",
-      }));
-      return;
-    }
-
-    setDraft((d) => ({
-      ...d,
-      [id]: String(current - 1),
-    }));
-  }
-
-  function changeValue(id: number, value: string) {
-    setDraft((d) => ({
-      ...d,
-      [id]: value,
-    }));
-  }
-
-  /* ---------------- LONG PRESS QUICK BOOK ---------------- */
-
-  function handlePressStart(drink: Drink) {
-    longPressTriggered.current = false;
-
-    pressTimer.current = setTimeout(async () => {
-      longPressTriggered.current = true;
-      await quickBook(drink);
-    }, 700);
-  }
-
-  function handlePressEnd() {
-    if (pressTimer.current) {
-      clearTimeout(pressTimer.current);
-    }
-  }
-
-  async function quickBook(drink: Drink) {
-    if (drink.stock <= 0) return;
-
-    await fetch("/api/drinks/increment", {
-      method: "POST",
+  async function loadUser() {
+    const res = await fetch("/api/auth/me", {
       credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        drinkId: drink.id,
-        amount: 1,
-      }),
     });
-
-    setFlashMessage(`+1 ${drink.name} gebucht`);
-    setTimeout(() => setFlashMessage(null), 1500);
-
-    init();
+    if (res.ok) {
+      const data = await res.json();
+      setUser(data);
+    }
   }
 
-  /* ---------------- MODAL BOOKING ---------------- */
+  const totalStriche = drinks.reduce(
+    (sum, drink) => sum + drink.amount,
+    0
+  );
+
+  function changeValue(id: number, delta: number) {
+    setInputs((prev) => {
+      const current = Number(prev[id] || 0);
+      const next = current + delta;
+      return { ...prev, [id]: next <= 0 ? "" : String(next) };
+    });
+  }
 
   function openConfirm(drink: Drink) {
-    const value = Number(draft[drink.id]);
-    if (!value || value <= 0) return;
-
+    if (!inputs[drink.id]) return;
     setConfirmDrink(drink);
-    setConfirmAmount(value);
   }
 
   async function confirmBooking() {
     if (!confirmDrink) return;
 
-    await fetch("/api/drinks/increment", {
+    const amount = Number(inputs[confirmDrink.id]);
+
+    await fetch("/api/scan", {
       method: "POST",
-      credentials: "include",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         drinkId: confirmDrink.id,
-        amount: confirmAmount,
+        amount,
       }),
     });
 
+    setInputs((prev) => ({ ...prev, [confirmDrink.id]: "" }));
     setConfirmDrink(null);
-    setConfirmAmount(0);
-    init();
+    load();
   }
-
-  if (loading) {
-    return <main className="p-6">Lade...</main>;
-  }
-
-  const total = drinks.reduce(
-    (s, d) => s + d.amount,
-    0
-  );
-
-  const hasLowStock = drinks.some(
-    (d) => d.stock <= d.minStock
-  );
 
   return (
-    <main className="p-6 space-y-6">
+    <div className="space-y-8">
 
-      <h1 className="text-xl font-bold">
-        Hallo {name} 👋
-      </h1>
+      {/* Header Bereich */}
+      <div className="flex justify-between items-center">
 
-      {hasLowStock && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 p-3 rounded">
-          ⚠️ Einige Getränke haben niedrigen Lagerbestand!
+        <div>
+          <p className="text-sm text-gray-500">
+            Hallo {user?.name}
+          </p>
+
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Dashboard
+          </h2>
         </div>
-      )}
 
-      {flashMessage && (
-        <div className="bg-green-100 text-green-800 p-2 rounded text-center">
-          {flashMessage}
+        {/* 🔵 Gesamt Badge */}
+        <div className="relative">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white shadow-lg">
+            🍺
+          </div>
+
+          <span className="absolute -top-2 -right-2 bg-white dark:bg-gray-900 text-red-600 text-xs font-bold px-2 py-1 rounded-full shadow">
+            {totalStriche}
+          </span>
         </div>
-      )}
 
-      <div className="text-sm text-gray-600">
-        Gesamt getrunken: {total} Flaschen
       </div>
 
-      <section className="bg-white p-4 rounded-xl shadow space-y-4">
-        {drinks.map((d) => {
-          const cases =
-            d.unitsPerCase > 0
-              ? Math.floor(d.stock / d.unitsPerCase)
-              : 0;
+      {/* Drink Cards */}
+      <div className="space-y-6">
+        {drinks.map((drink) => {
 
+          const cases = Math.floor(
+            drink.stock / drink.unitsPerCase
+          );
           const bottles =
-            d.unitsPerCase > 0
-              ? d.stock % d.unitsPerCase
-              : d.stock;
-
-          const isLow = d.stock <= d.minStock;
-          const isEmpty = d.stock === 0;
+            drink.stock % drink.unitsPerCase;
 
           return (
             <div
-              key={d.id}
-              className="border rounded-lg p-4 space-y-2"
+              key={drink.id}
+              className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg p-6 space-y-4 border"
             >
-              <div className="font-medium">
-                {d.name}
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-medium">
+                  {drink.name}
+                </h3>
+
+                <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                  Deine Striche: {drink.amount}
+                </span>
               </div>
 
-              <div className="text-sm text-gray-600">
-                Bereits getrunken: {d.amount}
+              <div className="text-sm text-gray-500">
+                Bestand:{" "}
+                <strong>
+                  {cases} Kisten + {bottles} Flaschen
+                </strong>
               </div>
 
-              <div
-                className={`text-xs font-medium ${
-                  isLow
-                    ? "text-red-600"
-                    : "text-gray-600"
-                }`}
-              >
-                Lagerbestand: {d.stock}
-              </div>
-
-              {isEmpty && (
-                <div className="text-red-600 text-xs font-semibold">
-                  🔴 Leer
+              {drink.stock <= drink.minStock && (
+                <div className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full inline-block">
+                  ⚠ Niedriger Bestand
                 </div>
               )}
 
-              {!isEmpty && isLow && (
-                <div className="text-yellow-600 text-xs font-semibold">
-                  🟡 Niedrig
-                </div>
-              )}
-
-              <div className="text-xs text-gray-400">
-                = {cases} Kisten + {bottles} Flaschen
-              </div>
-
-              {/* STEPPER + BUTTON */}
-              <div className="flex items-center gap-2 pt-3">
-
-                <div className="flex items-center border rounded-lg overflow-hidden">
-
-                  <button
-                    onClick={() => decrement(d.id)}
-                    className="px-3 py-1 bg-gray-100 active:bg-gray-200 select-none"
-                    style={{
-                      WebkitUserSelect: "none",
-                      userSelect: "none",
-                      WebkitTouchCallout: "none",
-                    }}
-                  >
-                    –
-                  </button>
-
-                  <input
-                    type="number"
-                    min="1"
-                    placeholder="0"
-                    value={draft[d.id] ?? ""}
-                    onChange={(e) =>
-                      changeValue(d.id, e.target.value)
-                    }
-                    className="w-14 text-center outline-none border-x"
-                  />
-
-                  <button
-                    onClick={() => {
-                      if (!longPressTriggered.current)
-                        increment(d.id);
-                    }}
-                    onMouseDown={() =>
-                      handlePressStart(d)
-                    }
-                    onMouseUp={handlePressEnd}
-                    onTouchStart={(e) => {
-                      e.preventDefault();
-                      handlePressStart(d);
-                    }}
-                    onTouchEnd={(e) => {
-                      e.preventDefault();
-                      handlePressEnd();
-                    }}
-                    className="px-3 py-1 bg-gray-100 active:bg-gray-200 select-none"
-                    style={{
-                      WebkitUserSelect: "none",
-                      userSelect: "none",
-                      WebkitTouchCallout: "none",
-                    }}
-                  >
-                    +
-                  </button>
-
-                </div>
-
+              <div className="flex items-center justify-center gap-6 pt-2">
                 <button
-                  onClick={() => openConfirm(d)}
-                  className="flex-1 bg-green-600 text-white py-1 rounded-lg active:scale-95 transition"
+                  onClick={() => changeValue(drink.id, -1)}
+                  className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 text-xl font-semibold select-none active:scale-90 transition"
                 >
-                  Buchen
+                  −
                 </button>
 
+                <input
+                  type="number"
+                  value={inputs[drink.id] || ""}
+                  onChange={(e) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      [drink.id]: e.target.value,
+                    }))
+                  }
+                  placeholder="0"
+                  className="w-16 text-center text-lg font-medium bg-transparent outline-none"
+                />
+
+                <button
+                  onClick={() => changeValue(drink.id, 1)}
+                  className="w-12 h-12 rounded-full bg-green-600 text-white text-xl font-semibold select-none active:scale-90 transition shadow-md"
+                >
+                  +
+                </button>
               </div>
 
+              <button
+                onClick={() => openConfirm(drink)}
+                className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium active:scale-[0.98] transition shadow-md"
+              >
+                Buchen
+              </button>
             </div>
           );
         })}
-      </section>
+      </div>
 
+      {/* Confirm Modal bleibt wie gehabt */}
       {confirmDrink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl shadow space-y-4 w-80">
-            <h2 className="font-bold text-lg">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
+            <h3 className="text-lg font-semibold">
               Buchung bestätigen
-            </h2>
+            </h3>
 
-            <p className="text-sm">
-              Möchtest du wirklich{" "}
-              <strong>
-                {confirmAmount}x {confirmDrink.name}
-              </strong>{" "}
-              buchen?
+            <p className="text-sm text-gray-600">
+              {inputs[confirmDrink.id]}x {confirmDrink.name} buchen?
             </p>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex gap-3">
               <button
-                onClick={() =>
-                  setConfirmDrink(null)
-                }
-                className="px-3 py-1 border rounded"
+                onClick={() => setConfirmDrink(null)}
+                className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-gray-700"
               >
                 Abbrechen
               </button>
 
               <button
                 onClick={confirmBooking}
-                className="px-3 py-1 bg-green-600 text-white rounded"
+                className="flex-1 py-2 rounded-xl bg-red-600 text-white"
               >
-                Ja, buchen
+                Bestätigen
               </button>
             </div>
           </div>
         </div>
       )}
-    </main>
+
+    </div>
   );
 }

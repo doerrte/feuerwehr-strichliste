@@ -7,8 +7,8 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const urlRedirect =
-    searchParams.get("redirect");
+  const redirect =
+    searchParams.get("redirect") || "/dashboard";
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
@@ -45,12 +45,7 @@ export default function LoginForm() {
         return;
       }
 
-      // 🔥 Hier liegt die Lösung
-      const finalRedirect =
-        data.redirect || urlRedirect || "/dashboard";
-
-      router.replace(finalRedirect);
-
+      router.replace(redirect);
     } catch {
       setError("Serverfehler");
       setLoading(false);
@@ -58,66 +53,68 @@ export default function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100 p-6">
-      <div className="bg-white w-full max-w-sm rounded-xl shadow p-6 space-y-4">
-        <h1 className="text-xl font-bold text-center">
-          🔐 Login
-        </h1>
+    <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 space-y-5 transition">
 
-        <form
-          onSubmit={handleLogin}
-          className="space-y-4"
+      <h1 className="text-xl font-semibold text-center">
+        🔐 Login
+      </h1>
+
+      <form
+        onSubmit={handleLogin}
+        className="space-y-4"
+      >
+        <div>
+          <label className="block text-sm font-medium">
+            Telefonnummer
+          </label>
+          <input
+            type="text"
+            value={phone}
+            onChange={(e) =>
+              setPhone(e.target.value)
+            }
+            className="border dark:border-gray-700 bg-white dark:bg-gray-800 p-2 rounded w-full"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium">
+            Passwort
+          </label>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) =>
+              setPassword(e.target.value)
+            }
+            className="border dark:border-gray-700 bg-white dark:bg-gray-800 p-2 rounded w-full"
+            required
+          />
+        </div>
+
+        {error && (
+          <div className="text-red-600 text-sm">
+            {error}
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-red-600 text-white py-2 rounded-lg transition active:scale-95"
         >
-          <div>
-            <label className="block text-sm font-medium">
-              Telefonnummer
-            </label>
-            <input
-              type="number"
-              value={phone}
-              onChange={(e) =>
-                setPhone(e.target.value)
-              }
-              className="border p-2 rounded w-full"
-              required
-            />
-          </div>
+          {loading
+            ? "Bitte warten..."
+            : "Einloggen"}
+        </button>
+      </form>
 
-          <div>
-            <label className="block text-sm font-medium">
-              Passwort
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) =>
-                setPassword(e.target.value)
-              }
-              className="border p-2 rounded w-full"
-              required
-            />
-          </div>
+      <p className="text-xs text-gray-500 text-center">
+        Passwort vergessen?  
+        Bitte an den Getränkewart wenden.
+      </p>
 
-          {error && (
-            <div className="text-red-600 text-sm">
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-red-600 text-white py-2 rounded"
-          >
-            {loading
-              ? "Bitte warten..."
-              : "Einloggen"}
-          </button>
-        </form>
-        <p className="text-center"><strong>Du hast dein Passwort vergessen?</strong><br />
-        Dann wende dich bitte an den Getränkewart
-        </p>
-      </div>
-    </main>
+    </div>
   );
 }

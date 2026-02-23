@@ -1,17 +1,11 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import bcrypt from "bcryptjs";
+import bcrypt from "bcrypt";
+import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
     const { phone, password } = await req.json();
-
-    if (!phone || !password) {
-      return NextResponse.json(
-        { error: "Fehlende Daten" },
-        { status: 400 }
-      );
-    }
 
     const user = await prisma.user.findUnique({
       where: { phone },
@@ -20,13 +14,20 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json(
         { error: "Benutzer nicht gefunden" },
-        { status: 401 }
+        { status: 404 }
+      );
+    }
+
+    if (user.deletedAt) {
+      return NextResponse.json(
+        { error: "Benutzer wurde gelöscht" },
+        { status: 403 }
       );
     }
 
     if (!user.active) {
       return NextResponse.json(
-        { error: "Benutzer deaktiviert" },
+        { error: "Benutzer ist deaktiviert" },
         { status: 403 }
       );
     }
@@ -43,28 +44,17 @@ export async function POST(req: Request) {
       );
     }
 
-    const response = NextResponse.json({
-      redirect: user.hasSeenIntro
-        ? "/dashboard"
-        : "/intro",
-    });
-
-    response.cookies.set("userId", String(user.id), {
+    cookies().set("userId", String(user.id), {
       httpOnly: true,
+      secure: true,
       sameSite: "lax",
-      secure: process.env.NODE_ENV === "production",
       path: "/",
-      maxAge: 60 * 60 * 24 * 30, // 30 Tage
-      expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30),
     });
 
-    return response;
-
-  } catch (error) {
-    console.error("LOGIN ERROR:", error);
-
+    return NextResponse.json({ success: true });
+  } catch (err) {
     return NextResponse.json(
-      { error: "Serverfehler" },
+      { error: "Login Fehler" },
       { status: 500 }
     );
   }

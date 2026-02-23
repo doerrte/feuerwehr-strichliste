@@ -6,6 +6,7 @@ type User = {
   id: number;
   name: string;
   active: boolean;
+  total: number;
 };
 
 type Drink = {
@@ -21,10 +22,10 @@ type Count = {
 export default function AdminStrichlistePage() {
   const [users, setUsers] = useState<User[]>([]);
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [counts, setCounts] = useState<Record<number, number>>({});
-  const [draftCounts, setDraftCounts] = useState<Record<number, number>>({});
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [total, setTotal] = useState(0);
+  const [draftCounts, setDraftCounts] = useState<Record<number, number>>({});
+  const [originalCounts, setOriginalCounts] = useState<Record<number, number>>({});
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     loadUsers();
@@ -32,9 +33,9 @@ export default function AdminStrichlistePage() {
   }, []);
 
   async function loadUsers() {
-    const res = await fetch("/api/admin/users");
+    const res = await fetch("/api/admin/users/with-totals");
     const data = await res.json();
-    setUsers(data.filter((u: User) => u.active));
+    setUsers(data);
   }
 
   async function loadDrinks() {
@@ -46,55 +47,39 @@ export default function AdminStrichlistePage() {
   async function openUser(user: User) {
     setSelectedUser(user);
 
-    const res = await fetch(
-      `/api/admin/counts?userId=${user.id}`
-    );
-
+    const res = await fetch(`/api/admin/counts?userId=${user.id}`);
     const data: Count[] = await res.json();
 
     const map: Record<number, number> = {};
-    let sum = 0;
+
+    drinks.forEach((d) => (map[d.id] = 0));
 
     data.forEach((c) => {
       map[c.drinkId] = c.amount;
-      sum += c.amount;
     });
 
-    setCounts(map);
     setDraftCounts(map);
-    setTotal(sum);
+    setOriginalCounts(map);
   }
 
   function changeDraft(drinkId: number, value: number) {
-    const updated = {
-      ...draftCounts,
+    setDraftCounts((prev) => ({
+      ...prev,
       [drinkId]: value,
-    };
-
-    setDraftCounts(updated);
-
-    const newTotal = Object.values(updated).reduce(
-      (a, b) => a + b,
-      0
-    );
-
-    setTotal(newTotal);
+    }));
   }
 
   async function saveChanges() {
     if (!selectedUser) return;
-
     if (!confirm("Änderungen speichern?")) return;
 
     for (const drinkId of Object.keys(draftCounts)) {
       const id = Number(drinkId);
 
-      if (draftCounts[id] !== counts[id]) {
+      if (draftCounts[id] !== originalCounts[id]) {
         await fetch("/api/admin/counts", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             userId: selectedUser.id,
             drinkId: id,
@@ -104,126 +89,131 @@ export default function AdminStrichlistePage() {
       }
     }
 
-    setCounts(draftCounts);
-
-    alert("Änderungen gespeichert ✅");
+    setSelectedUser(null);
+    loadUsers();
   }
 
-  function cancelChanges() {
-    setDraftCounts(counts);
-    setTotal(
-      Object.values(counts).reduce(
-        (a, b) => a + b,
-        0
-      )
-    );
+  function resetAll() {
+    if (!confirm("Alle Getränke auf 0 setzen?")) return;
+
+    const reset: Record<number, number> = {};
+    drinks.forEach((d) => (reset[d.id] = 0));
+    setDraftCounts(reset);
   }
 
-  function resetAllDraft() {
-    if (!confirm("⚠️ Wirklich alle Getränke auf 0 setzen?"))
-      return;
+  const total = Object.values(draftCounts).reduce((a, b) => a + b, 0);
 
-    const resetMap: Record<number, number> = {};
-
-    drinks.forEach((d) => {
-      resetMap[d.id] = 0;
-    });
-
-    setDraftCounts(resetMap);
-    setTotal(0);
-  }
+  const filtered = users.filter((u) =>
+    u.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
-    <main className="p-6 space-y-6">
-      <h1 className="text-xl font-bold">
-        📊 Admin – Strichliste
-      </h1>
+    <div className="space-y-8">
 
-      <section className="space-y-3">
-        {users.map((u) => (
+      <h1 className="text-2xl font-semibold">📊 Strichliste</h1>
+
+      <input
+        type="text"
+        placeholder="Benutzer suchen..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        className="w-full p-3 rounded-2xl border bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl outline-none"
+      />
+
+      <div className="space-y-4">
+        {filtered.map((user) => (
           <div
-            key={u.id}
-            onClick={() => openUser(u)}
-            className="border p-3 rounded bg-white shadow cursor-pointer hover:bg-gray-50"
+            key={user.id}
+            onClick={() => openUser(user)}
+            className="flex justify-between items-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-5 shadow-lg border hover:scale-[1.01] transition cursor-pointer"
           >
-            {u.name}
+            <div>
+              <h3 className="text-lg font-medium">
+                {user.name}
+              </h3>
+              <span className="text-xs text-gray-500">
+                {user.active ? "Aktiv" : "Inaktiv"}
+              </span>
+            </div>
+
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 text-white flex items-center justify-center shadow-lg">
+              {user.total}
+            </div>
           </div>
         ))}
-      </section>
+      </div>
 
+      {/* EDIT MODAL */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white w-full max-w-lg rounded-xl shadow p-6 space-y-4">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+
+          <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-3xl p-6 shadow-2xl space-y-6">
 
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-bold">
-                Strichliste von {selectedUser.name}
+              <h2 className="text-xl font-semibold">
+                {selectedUser.name}
               </h2>
-              <button
-                onClick={() => setSelectedUser(null)}
-                className="text-red-600"
-              >
+              <button onClick={() => setSelectedUser(null)}>
                 ✕
               </button>
             </div>
 
-            <div className="text-sm text-gray-600">
+            <div className="text-sm text-gray-500">
               Gesamt: <strong>{total}</strong>
             </div>
 
-            <div className="space-y-3 max-h-80 overflow-y-auto">
-              {drinks.map((d) => (
+            <div className="space-y-4 max-h-72 overflow-y-auto">
+              {drinks.map((drink) => (
                 <div
-                  key={d.id}
-                  className="flex justify-between items-center border p-2 rounded"
+                  key={drink.id}
+                  className="flex justify-between items-center border rounded-xl p-3"
                 >
-                  <span>{d.name}</span>
+                  <span>{drink.name}</span>
 
                   <input
                     type="number"
-                    value={draftCounts[d.id] ?? 0}
+                    value={draftCounts[drink.id] ?? 0}
                     onChange={(e) =>
                       changeDraft(
-                        d.id,
+                        drink.id,
                         Number(e.target.value)
                       )
                     }
-                    className="w-20 text-center border rounded p-1"
+                    className="w-20 text-center border rounded-lg p-1"
                   />
                 </div>
               ))}
             </div>
 
             <div className="flex justify-between pt-4">
-
               <button
-                onClick={resetAllDraft}
-                className="bg-red-600 text-white px-4 py-2 rounded"
+                onClick={resetAll}
+                className="bg-red-600 text-white px-4 py-2 rounded-xl"
               >
-                🔄 Reset
+                Reset
               </button>
 
               <div className="flex gap-3">
                 <button
-                  onClick={cancelChanges}
-                  className="border px-4 py-2 rounded"
+                  onClick={() => setSelectedUser(null)}
+                  className="px-4 py-2 rounded-xl border"
                 >
                   Abbrechen
                 </button>
 
                 <button
                   onClick={saveChanges}
-                  className="bg-green-600 text-white px-4 py-2 rounded"
+                  className="bg-green-600 text-white px-4 py-2 rounded-xl"
                 >
                   Speichern
                 </button>
               </div>
-
             </div>
 
           </div>
         </div>
       )}
-    </main>
+
+    </div>
   );
 }

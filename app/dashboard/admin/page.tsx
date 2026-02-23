@@ -6,13 +6,15 @@ type User = {
   id: number;
   name: string;
   phone: string;
-  role: "ADMIN" | "USER";
+  role: string;
   active: boolean;
+  deletedAt: string | null;
 };
 
 export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [confirmUser, setConfirmUser] = useState<User | null>(null);
+  const [actionType, setActionType] = useState<string>("");
 
   useEffect(() => {
     loadUsers();
@@ -24,135 +26,179 @@ export default function AdminPage() {
     setUsers(data);
   }
 
-  async function manageUser(
-    userId: number,
-    action: "activate" | "deactivate" | "delete"
-  ) {
-    const confirmText =
-      action === "delete"
-        ? "Benutzer wirklich löschen?"
-        : action === "deactivate"
-        ? "Benutzer deaktivieren?"
-        : "Benutzer aktivieren?";
+  async function executeAction() {
+    if (!confirmUser) return;
 
-    if (!confirm(confirmText)) return;
+    await fetch("/api/admin/users/manage", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: confirmUser.id,
+        action: actionType,
+      }),
+    });
 
-    setLoading(true);
-
-    const res = await fetch(
-      "/api/admin/users/manage",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          userId,
-          action,
-        }),
-      }
-    );
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      alert(data.error || "Fehler");
-      setLoading(false);
-      return;
-    }
-
-    await loadUsers();
-    setLoading(false);
+    setConfirmUser(null);
+    loadUsers();
   }
 
+  const activeUsers = users.filter(
+    u => u.active && !u.deletedAt
+  );
+
+  const inactiveUsers = users.filter(
+    u => !u.active && !u.deletedAt
+  );
+
+  const deletedUsers = users.filter(
+    u => u.deletedAt
+  );
+
   return (
-    <main className="p-6 space-y-6">
-      <h1 className="text-xl font-bold">
+    <div className="space-y-10">
+
+      <h1 className="text-2xl font-semibold">
         👥 Benutzerverwaltung
       </h1>
 
-      <div className="space-y-4">
-        {users.map((user) => (
-          <div
-            key={user.id}
-            className="bg-white p-4 rounded shadow flex justify-between items-center"
-          >
-            <div>
-              <div className="font-semibold">
-                {user.name}
-              </div>
+      <UserSection
+        title="Aktive Benutzer"
+        users={activeUsers}
+        onAction={(user, action) => {
+          setConfirmUser(user);
+          setActionType(action);
+        }}
+      />
 
-              <div className="text-sm text-gray-600">
-                {user.phone}
-              </div>
+      <UserSection
+        title="Deaktivierte Benutzer"
+        users={inactiveUsers}
+        onAction={(user, action) => {
+          setConfirmUser(user);
+          setActionType(action);
+        }}
+      />
 
-              <div className="text-xs mt-1">
-                Rolle:{" "}
-                <span className="font-medium">
-                  {user.role}
-                </span>
-              </div>
+      <UserSection
+        title="Gelöschte Benutzer"
+        users={deletedUsers}
+        isDeleted
+        onAction={(user, action) => {
+          setConfirmUser(user);
+          setActionType(action);
+        }}
+      />
 
-              <div className="text-xs mt-1">
-                Status:{" "}
-                {user.active ? (
-                  <span className="text-green-600 font-medium">
-                    Aktiv
-                  </span>
-                ) : (
-                  <span className="text-red-600 font-medium">
-                    Deaktiviert
-                  </span>
-                )}
-              </div>
-            </div>
+      {confirmUser && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+            <h2 className="text-lg font-semibold text-center">
+              Aktion bestätigen?
+            </h2>
 
-            <div className="flex gap-2">
-              {user.active ? (
-                <button
-                  disabled={loading}
-                  onClick={() =>
-                    manageUser(
-                      user.id,
-                      "deactivate"
-                    )
-                  }
-                  className="bg-yellow-500 text-white px-3 py-1 rounded text-sm"
-                >
-                  Deaktivieren
-                </button>
-              ) : (
-                <button
-                  disabled={loading}
-                  onClick={() =>
-                    manageUser(
-                      user.id,
-                      "activate"
-                    )
-                  }
-                  className="bg-green-600 text-white px-3 py-1 rounded text-sm"
-                >
-                  Aktivieren
-                </button>
-              )}
+            <p className="text-center text-gray-500">
+              {confirmUser.name}
+            </p>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setConfirmUser(null)}
+                className="flex-1 py-2 rounded-xl bg-gray-200"
+              >
+                Abbrechen
+              </button>
 
               <button
-                disabled={loading}
-                onClick={() =>
-                  manageUser(
-                    user.id,
-                    "delete"
-                  )
-                }
-                className="bg-red-600 text-white px-3 py-1 rounded text-sm"
+                onClick={executeAction}
+                className="flex-1 py-2 rounded-xl bg-red-600 text-white"
               >
-                Löschen
+                Bestätigen
               </button>
             </div>
           </div>
-        ))}
-      </div>
-    </main>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+function UserSection({
+  title,
+  users,
+  onAction,
+  isDeleted,
+}: any) {
+  if (!users.length) return null;
+
+  return (
+    <div className="space-y-4">
+      <h2 className="font-medium text-lg">{title}</h2>
+
+      {users.map((user: any) => (
+        <div
+          key={user.id}
+          className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-5 shadow-lg border flex justify-between items-center"
+        >
+          <div>
+            <div className="font-medium">
+              {user.name}
+            </div>
+            <div className="text-sm text-gray-500">
+              {user.phone}
+            </div>
+            {user.deletedAt && (
+              <div className="text-xs text-red-500">
+                gelöscht am {new Date(user.deletedAt).toLocaleDateString()}
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-2">
+
+            {!isDeleted && (
+              <>
+                <button
+                  onClick={() =>
+                    onAction(
+                      user,
+                      user.active
+                        ? "deactivate"
+                        : "activate"
+                    )
+                  }
+                  className="px-3 py-1 rounded-xl bg-gray-200 text-sm"
+                >
+                  {user.active ? "Deaktivieren" : "Aktivieren"}
+                </button>
+
+                <button
+                  onClick={() =>
+                    onAction(user, "delete")
+                  }
+                  className="px-3 py-1 rounded-xl bg-red-100 text-red-700 text-sm"
+                >
+                  Löschen
+                </button>
+              </>
+            )}
+
+            {isDeleted && (
+              <button
+                onClick={() =>
+                  onAction(user, "restore")
+                }
+                className="px-3 py-1 rounded-xl bg-green-100 text-green-700 text-sm"
+              >
+                Wiederherstellen
+              </button>
+            )}
+
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }

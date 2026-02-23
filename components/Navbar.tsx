@@ -1,122 +1,66 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 
-export default function Navbar() {
-  const router = useRouter();
+type Props = {
+  role: "USER" | "ADMIN";
+};
+
+export default function Navbar({ role }: Props) {
   const pathname = usePathname();
 
-  const [role, setRole] = useState<
-    "ADMIN" | "USER" | null
-  >(null);
+  function item(href: string, label: string, icon: string) {
+    const active = pathname.startsWith(href);
 
-  const [adminRoute, setAdminRoute] = useState("");
+    return (
+      <Link
+        href={href}
+        className="flex flex-col items-center flex-1"
+      >
+        <div
+          className={`flex flex-col items-center gap-1 transition-all duration-300 ${
+            active
+              ? "text-red-600 scale-110"
+              : "text-gray-500"
+          }`}
+        >
+          <span className="text-xl">{icon}</span>
+          <span className="text-xs font-medium">
+            {label}
+          </span>
 
-  // 🔥 WICHTIG: bei jeder Routenänderung neu prüfen
-  useEffect(() => {
-    async function loadUser() {
-      const res = await fetch("/api/auth/me", {
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      if (!res.ok) {
-        setRole(null);
-        return;
-      }
-
-      const data = await res.json();
-      setRole(data.role);
-    }
-
-    loadUser();
-  }, [pathname]); // 👈 reagiert auf Navigation
-
-  if (pathname === "/login") return null;
-  if (!role) return null;
-
-  async function logout() {
-    const confirmed = confirm(
-      "Möchtest du dich wirklich ausloggen?"
+          {active && (
+            <div className="w-1 h-1 bg-red-600 rounded-full mt-1" />
+          )}
+        </div>
+      </Link>
     );
-    if (!confirmed) return;
-
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    window.location.href = "/login";
-  }
-
-  function handleAdminChange(value: string) {
-    if (!value) return;
-    router.push(value);
-    setAdminRoute("");
   }
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t p-3 flex justify-between items-center shadow">
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-6 z-50">
 
-      {role === "ADMIN" && (
-        <select
-          value={adminRoute}
-          onChange={(e) =>
-            handleAdminChange(e.target.value)
-          }
-          className="border rounded px-2 py-1 text-sm"
-        >
-          <option value="" disabled>
-            Menü
-          </option>
-          <option value="/dashboard">
-            Dashboard
-          </option>
-          <option value="/dashboard/admin">
-            Benutzerverwaltung
-          </option>
-          <option value="/dashboard/admin/strichliste">
-            Strichliste
-          </option>
-          <option value="/dashboard/admin/lager">
-            Lager
-          </option>
-          <option value="/dashboard/admin/logs">
-            Änderungsprotokoll
-          </option>
-          <option value="/dashboard/profile">
-            Profil
-          </option>
-        </select>
-      )}
+      <div className="flex justify-between items-center bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl rounded-3xl shadow-2xl px-6 py-3 border border-white/20">
 
-      {role === "USER" && (
-        <select
-          value={adminRoute}
-          onChange={(e) =>
-            handleAdminChange(e.target.value)
-          }
-          className="border rounded px-2 py-1 text-sm"
-        >
-          <option value="" disabled>
-            Menü
-          </option>
-          <option value="/dashboard">
-            Dashboard
-          </option>
-          <option value="/dashboard/profile">
-            Profil
-          </option>
-        </select>
-      )}
+        {item("/dashboard", "Dashboard", "🏠")}
 
-      <button
-        onClick={logout}
-        className="text-red-600 font-medium"
-      >
-        Logout
-      </button>
-    </nav>
+        {role === "USER" &&
+          item("/dashboard/profile", "Profil", "👤")}
+
+        {role === "ADMIN" && (
+          <>
+            {item("/dashboard/admin/strichliste", "Striche", "📊")}
+            {item("/dashboard/admin/lager", "Lager", "📦")}
+            {item("/dashboard/admin", "Admin", "👥")}
+            {item("/dashboard/admin/logs", "Logs", "📜")}
+
+
+          </>
+        )}
+
+      </div>
+
+    </div>
   );
 }

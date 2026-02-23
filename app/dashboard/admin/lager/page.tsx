@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import AddDrinkModal from "@/components/AddDrinkModal";
 
 type Drink = {
   id: number;
@@ -12,23 +13,9 @@ type Drink = {
 
 export default function LagerPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [refillDrink, setRefillDrink] =
-    useState<Drink | null>(null);
-
-  const [refillData, setRefillData] =
-    useState({
-      cases: "",
-      singleBottles: "",
-    });
-
-  const [newDrink, setNewDrink] =
-    useState({
-      name: "",
-      unitsPerCase: "",
-      cases: "",
-      singleBottles: "",
-      minStock: "",
-    });
+  const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
+  const [refillCases, setRefillCases] = useState(0);
+  const [refillBottles, setRefillBottles] = useState(0);
 
   useEffect(() => {
     load();
@@ -40,87 +27,34 @@ export default function LagerPage() {
     setDrinks(data);
   }
 
-  async function addDrink() {
-    if (!newDrink.name || !newDrink.unitsPerCase)
-      return;
-
-    await fetch("/api/drinks", {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/json",
-      },
-      body: JSON.stringify({
-        name: newDrink.name,
-        unitsPerCase: Number(
-          newDrink.unitsPerCase
-        ),
-        cases: Number(
-          newDrink.cases || 0
-        ),
-        singleBottles: Number(
-          newDrink.singleBottles || 0
-        ),
-        minStock: Number(
-          newDrink.minStock || 10
-        ),
-      }),
-    });
-
-    setNewDrink({
-      name: "",
-      unitsPerCase: "",
-      cases: "",
-      singleBottles: "",
-      minStock: "",
-    });
-
-    load();
-  }
-
   function openRefill(drink: Drink) {
-    setRefillDrink(drink);
-    setRefillData({
-      cases: "",
-      singleBottles: "",
-    });
+    setSelectedDrink(drink);
+    setRefillCases(0);
+    setRefillBottles(0);
   }
 
   async function confirmRefill() {
-    if (!refillDrink) return;
+    if (!selectedDrink) return;
 
-    const added =
-      Number(refillData.cases || 0) *
-        refillDrink.unitsPerCase +
-      Number(refillData.singleBottles || 0);
+    const total =
+      refillCases * selectedDrink.unitsPerCase + refillBottles;
 
-    if (added <= 0) return;
+    await fetch(`/api/drinks/${selectedDrink.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        stock: selectedDrink.stock + total,
+      }),
+    });
 
-    await fetch(
-      `/api/drinks/${refillDrink.id}`,
-      {
-        method: "PATCH",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          stock:
-            refillDrink.stock +
-            added,
-        }),
-      }
-    );
-
-    setRefillDrink(null);
+    setSelectedDrink(null);
     load();
   }
 
-  async function deleteDrink(id: number) {
-    if (!confirm("Wirklich löschen?"))
-      return;
+  async function deleteDrink(drink: Drink) {
+    if (!confirm("Getränk löschen?")) return;
 
-    await fetch(`/api/drinks/${id}`, {
+    await fetch(`/api/drinks/${drink.id}`, {
       method: "DELETE",
     });
 
@@ -128,277 +62,135 @@ export default function LagerPage() {
   }
 
   return (
-    <main className="p-6 space-y-8">
-      <h1 className="text-xl font-bold">
+    <div className="space-y-8">
+
+      <h1 className="text-2xl font-semibold">
         📦 Lagerverwaltung
       </h1>
 
-      {/* Neues Getränk */}
-      <section className="bg-white p-4 rounded shadow space-y-4">
-        <h2 className="font-semibold">
-          Neues Getränk hinzufügen
-        </h2>
-
-        <div className="space-y-3">
-
-          <input
-            placeholder="Getränkename"
-            value={newDrink.name}
-            onChange={(e) =>
-              setNewDrink({
-                ...newDrink,
-                name: e.target.value,
-              })
-            }
-            className="border p-2 rounded w-full"
-          />
-
-          <input
-            type="number"
-            placeholder="Flaschen pro Kasten"
-            value={newDrink.unitsPerCase}
-            onChange={(e) =>
-              setNewDrink({
-                ...newDrink,
-                unitsPerCase:
-                  e.target.value,
-              })
-            }
-            className="border p-2 rounded w-full"
-          />
-
-          <input
-            type="number"
-            placeholder="Anzahl Kästen"
-            value={newDrink.cases}
-            onChange={(e) =>
-              setNewDrink({
-                ...newDrink,
-                cases:
-                  e.target.value,
-              })
-            }
-            className="border p-2 rounded w-full"
-          />
-
-          <input
-            type="number"
-            placeholder="Einzelflaschen"
-            value={newDrink.singleBottles}
-            onChange={(e) =>
-              setNewDrink({
-                ...newDrink,
-                singleBottles:
-                  e.target.value,
-              })
-            }
-            className="border p-2 rounded w-full"
-          />
-
-          <input
-            type="number"
-            placeholder="Mindestbestand Flaschen (Warnung)"
-            value={newDrink.minStock}
-            onChange={(e) =>
-              setNewDrink({
-                ...newDrink,
-                minStock:
-                  e.target.value,
-              })
-            }
-            className="border p-2 rounded w-full"
-          />
-
-          <div className="text-sm text-gray-600">
-            Gesamtbestand:{" "}
-            {newDrink.unitsPerCase &&
-            newDrink.cases
-              ? Number(
-                  newDrink.unitsPerCase
-                ) *
-                  Number(newDrink.cases) +
-                Number(
-                  newDrink.singleBottles ||
-                    0
-                )
-              : 0}{" "}
-            Flaschen
-          </div>
-
-          <button
-            onClick={addDrink}
-            className="bg-green-600 text-white px-4 py-2 rounded"
-          >
-            Getränk erstellen
-          </button>
-
-        </div>
-      </section>
-
-      {/* Bestehende Getränke */}
-      <section className="space-y-4">
+      <div className="space-y-5">
         {drinks.map((drink) => {
-          const cases =
-            Math.floor(
-              drink.stock /
-                drink.unitsPerCase
-            );
-
+          const cases = Math.floor(
+            drink.stock / drink.unitsPerCase
+          );
           const bottles =
-            drink.stock %
-            drink.unitsPerCase;
-
-          const isLow =
-            drink.stock <=
-            drink.minStock;
-
-          const isEmpty =
-            drink.stock === 0;
+            drink.stock % drink.unitsPerCase;
 
           return (
             <div
               key={drink.id}
-              className="bg-white p-4 rounded shadow space-y-2"
+              className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-4 border"
             >
-              <div className="flex justify-between">
-                <div className="font-bold">
-                  {drink.name}
-                </div>
+              <div className="flex justify-between items-center">
 
-                {isEmpty && (
-                  <span className="text-red-600 font-bold">
-                    🔴 Leer
-                  </span>
-                )}
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {drink.name}
+                  </h3>
 
-                {!isEmpty &&
-                  isLow && (
-                    <span className="text-yellow-600 font-bold">
-                      🟡 Niedrig
+                  {drink.stock <= drink.minStock && (
+                    <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+                      ⚠ Niedriger Bestand
                     </span>
                   )}
-              </div>
-
-              <div
-                className={`text-sm font-medium ${
-                  isLow
-                    ? "text-red-600"
-                    : ""
-                }`}
-              >
-                Bestand: {drink.stock}{" "}
-                Flaschen
-              </div>
-
-              <div className="text-xs text-gray-500">
-                = {cases} Kisten +{" "}
-                {bottles} Flaschen
-              </div>
-
-              {isLow && (
-                <div className="text-xs text-red-600 font-semibold">
-                  ⚠️ Mindestbestand unterschritten!
                 </div>
-              )}
 
-              <div className="flex gap-3 pt-2">
+                <div className="text-right">
+                  <div className="text-xl font-bold">
+                    {drink.stock}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    Flaschen
+                  </div>
+                </div>
+
+              </div>
+
+              <div className="flex justify-between text-sm text-gray-600">
+                <div>
+                  🧃 {cases} Kisten
+                </div>
+                <div>
+                  🍾 {bottles} Flaschen
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-3">
                 <button
-                  onClick={() =>
-                    openRefill(drink)
-                  }
-                  className="bg-blue-600 text-white px-3 py-1 rounded"
+                  onClick={() => openRefill(drink)}
+                  className="flex-1 py-2 rounded-2xl bg-blue-600 text-white shadow-md active:scale-95 transition"
                 >
                   Auffüllen
                 </button>
 
                 <button
-                  onClick={() =>
-                    deleteDrink(drink.id)
-                  }
-                  className="bg-red-600 text-white px-3 py-1 rounded"
+                  onClick={() => deleteDrink(drink)}
+                  className="flex-1 py-2 rounded-2xl bg-red-600 text-white shadow-md active:scale-95 transition"
                 >
                   Löschen
                 </button>
               </div>
+
             </div>
           );
         })}
-      </section>
+      </div>
 
       {/* Refill Modal */}
-      {refillDrink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-          <div className="bg-white p-6 rounded-xl shadow space-y-4 w-96">
+      {selectedDrink && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
 
-            <h2 className="font-bold">
-              Auffüllen –{" "}
-              {refillDrink.name}
+          <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-5">
+
+            <h2 className="text-lg font-semibold">
+              Auffüllen: {selectedDrink.name}
             </h2>
 
-            <input
-              type="number"
-              placeholder="Kästen"
-              value={refillData.cases}
-              onChange={(e) =>
-                setRefillData({
-                  ...refillData,
-                  cases:
-                    e.target.value,
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
+            <div className="space-y-3">
 
-            <input
-              type="number"
-              placeholder="Einzelflaschen"
-              value={
-                refillData.singleBottles
-              }
-              onChange={(e) =>
-                setRefillData({
-                  ...refillData,
-                  singleBottles:
-                    e.target.value,
-                })
-              }
-              className="border p-2 rounded w-full"
-            />
+              <input
+                type="number"
+                placeholder="Kisten"
+                value={refillCases}
+                onChange={(e) =>
+                  setRefillCases(Number(e.target.value))
+                }
+                className="w-full border p-3 rounded-xl"
+              />
 
-            <div className="text-sm">
-              Zuwachs:{" "}
-              {Number(
-                refillData.cases || 0
-              ) *
-                refillDrink.unitsPerCase +
-                Number(
-                  refillData.singleBottles ||
-                    0
-                )}{" "}
-              Flaschen
+              <input
+                type="number"
+                placeholder="Flaschen"
+                value={refillBottles}
+                onChange={(e) =>
+                  setRefillBottles(Number(e.target.value))
+                }
+                className="w-full border p-3 rounded-xl"
+              />
+
             </div>
 
-            <div className="flex justify-end gap-3">
+            <div className="flex gap-3 pt-3">
               <button
-                onClick={() =>
-                  setRefillDrink(null)
-                }
-                className="border px-3 py-1 rounded"
+                onClick={() => setSelectedDrink(null)}
+                className="flex-1 py-2 rounded-xl bg-gray-200 dark:bg-gray-700"
               >
                 Abbrechen
               </button>
 
               <button
                 onClick={confirmRefill}
-                className="bg-green-600 text-white px-3 py-1 rounded"
+                className="flex-1 py-2 rounded-xl bg-green-600 text-white"
               >
                 Bestätigen
               </button>
             </div>
 
           </div>
+
         </div>
       )}
-    </main>
+
+    </div>
   );
 }

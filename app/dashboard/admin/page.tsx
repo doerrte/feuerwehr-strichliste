@@ -48,7 +48,7 @@ export default function AdminPage() {
   async function deleteUser(user: User) {
     if (!confirm("Benutzer wirklich löschen?")) return;
 
-    await fetch("/api/admin/users/manage", {
+    await fetch("/api/admin/users/delete", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

@@ -2,40 +2,75 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-function isAdmin() {
-  const userId = cookies().get("userId")?.value;
-  return !!userId;
-}
-
 export async function POST(req: Request) {
   try {
-    if (!isAdmin()) {
+    const cookieStore = cookies();
+    const adminId = cookieStore.get("userId")?.value;
+
+    if (!adminId) {
       return NextResponse.json(
-        { error: "Nicht autorisiert" },
+        { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
 
-    const { userId } = await req.json();
+    const admin = await prisma.user.findUnique({
+      where: { id: Number(adminId) },
+    });
 
-    if (!userId) {
+    if (!admin || admin.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "userId fehlt" },
+        { error: "Forbidden" },
+        { status: 403 }
+      );
+    }
+
+    const { id } = await req.json();
+
+    if (!id) {
+      return NextResponse.json(
+        { error: "Fehlende Benutzer-ID" },
         { status: 400 }
       );
     }
 
-    // 🔥 Erst alle Counts löschen
+    if (Number(id) === Number(adminId)) {
+      return NextResponse.json(
+        { error: "Du kannst dich nicht selbst löschen" },
+        { status: 400 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Benutzer nicht gefunden" },
+        { status: 404 }
+      );
+    }
+
+    // 🔥 Wichtig: zuerst abhängige Daten löschen
     await prisma.count.deleteMany({
-      where: { userId },
+      where: { userId: Number(id) },
     });
 
-    // 🔥 Dann Benutzer löschen
+    await prisma.countLog.deleteMany({
+      where: {
+        OR: [
+          { userId: Number(id) },
+          { adminId: Number(id) },
+        ],
+      },
+    });
+
     await prisma.user.delete({
-      where: { id: userId },
+      where: { id: Number(id) },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ ok: true });
 
   } catch (error) {
     console.error("DELETE USER ERROR:", error);

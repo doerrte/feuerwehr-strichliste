@@ -39,28 +39,35 @@ export default function Navbar({ role }: Props) {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-full max-w-md px-6 z-50">
+  <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-full max-w-lg px-4 z-40">
 
-      <div className="flex justify-between items-center bg-white/70 dark:bg-gray-900/70 backdrop-blur-2xl rounded-3xl shadow-2xl px-6 py-3 border border-white/20">
+    <div className="
+      flex items-center gap-6
+      bg-white/80 dark:bg-gray-900/80
+      backdrop-blur-2xl
+      rounded-3xl shadow-xl
+      px-6 py-3
+      border border-white/20
+      overflow-x-auto
+      scrollbar-hide
+    ">
 
-        {item("/dashboard", "Dashboard", "🏠")}
+      {item("/dashboard", "Dashboard", "🏠")}
 
-        {role === "USER" &&
-          item("/dashboard/profile", "Profil", "👤")}
+      {role === "USER" &&
+        item("/dashboard/profile", "Profil", "👤")}
 
-        {role === "ADMIN" && (
-          <>
-            {item("/dashboard/admin/strichliste", "Striche", "📊")}
-            {item("/dashboard/admin/lager", "Lager", "📦")}
-            {item("/dashboard/admin", "Admin", "👥")}
-            {item("/dashboard/admin/logs", "Logs", "📜")}
-
-
-          </>
-        )}
-
-      </div>
+      {role === "ADMIN" && (
+        <>
+          {item("/dashboard/admin/strichliste", "Striche", "📊")}
+          {item("/dashboard/admin/lager", "Lager", "📦")}
+          {item("/dashboard/admin", "Benutzer", "👥")}
+          {item("/dashboard/admin/logs", "Logs", "📜")}
+        </>
+      )}
 
     </div>
-  );
+
+  </div>
+);
 }

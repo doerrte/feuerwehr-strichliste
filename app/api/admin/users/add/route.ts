@@ -5,7 +5,8 @@ import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    const userId = cookies().get("userId")?.value;
+    const cookieStore = cookies();
+    const userId = cookieStore.get("userId")?.value;
 
     if (!userId) {
       return NextResponse.json(
@@ -14,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔐 Echten User laden
+    // 🔐 Admin prüfen
     const currentUser = await prisma.user.findUnique({
       where: { id: Number(userId) },
     });
@@ -35,15 +36,31 @@ export async function POST(req: Request) {
       );
     }
 
+    const trimmedPhone = phone.trim();
+    const trimmedName = name.trim();
+
+    // 📱 Telefonnummer darf nicht doppelt sein
+    const existing = await prisma.user.findUnique({
+      where: { phone: trimmedPhone },
+    });
+
+    if (existing) {
+      return NextResponse.json(
+        { error: "Telefonnummer bereits vergeben" },
+        { status: 400 }
+      );
+    }
+
     const passwordHash = await hashPin(pin);
 
     await prisma.user.create({
       data: {
-        name: name.trim(),
-        phone: phone.trim(),
+        name: trimmedName,
+        phone: trimmedPhone,
         passwordHash,
         role: "USER",
         active: true,
+        hasSeenIntro: false,
       },
     });
 

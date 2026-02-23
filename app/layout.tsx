@@ -4,6 +4,16 @@ import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/Navbar";
 import ThemeToggle from "@/components/ThemeToggle";
 import LogoutButton from "@/components/LogoutButton";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Feuerwehr Getränkeliste",
+  description: "Strichliste",
+  manifest: "/manifest.json",
+  icons: {
+    apple: "/icons/feuerwehr.png",
+  },
+};
 
 export default async function RootLayout({
   children,

@@ -13,10 +13,27 @@ export default function LogoutButton() {
     setMounted(true);
   }, []);
 
+  // 🔒 Scroll Lock
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [open]);
+
   async function handleLogout() {
+    setOpen(false); // sofort schließen
+
     await fetch("/api/auth/logout", {
       method: "POST",
     });
+
+    document.body.style.overflow = ""; // Sicherheitshalber reset
 
     router.replace("/login");
   }
@@ -33,10 +50,14 @@ export default function LogoutButton() {
       {mounted &&
         open &&
         createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6">
-
-            <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-5">
-
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-6"
+            onClick={() => setOpen(false)} // click outside schließen
+          >
+            <div
+              className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-3xl p-6 shadow-2xl space-y-5"
+              onClick={(e) => e.stopPropagation()} // verhindert Schließen beim Klick innen
+            >
               <h2 className="text-lg font-semibold text-center">
                 Wirklich ausloggen?
               </h2>
@@ -60,9 +81,7 @@ export default function LogoutButton() {
                   Logout
                 </button>
               </div>
-
             </div>
-
           </div>,
           document.body
         )}

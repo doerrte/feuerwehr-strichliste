@@ -7,11 +7,13 @@ import InstallPrompt from "@/components/InstallPrompt";
 import AppHeader from "@/components/AppHeader";
 import Navbar from "@/components/Navbar";
 
-export const metadata: Metadata = {
-  title: "Feuerwehr Strichliste",
-  description: "Digitale Getränkestrichliste",
-  manifest: "/manifest.json",
-  themeColor: "#dc2626",
+export const metadata = {
+  title: "Feuerwehr Getränke",
+  description: "Strichliste App",
+};
+
+export const viewport = {
+  themeColor: "#000000",
 };
 
 export default async function RootLayout({

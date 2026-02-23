@@ -49,7 +49,7 @@ export default async function RootLayout({
         <meta name="theme-color" content="#dc2626" />
         <link
           rel="apple-touch-icon"
-          href="/icons/apple-touch-icon.png"
+          href="/icons/feuerwehr.png"
         />
       </head>
 

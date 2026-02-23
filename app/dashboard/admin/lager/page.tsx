@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import  EditStockModal  from "@/components/EditStockModal";
+import EditStockModal from "@/components/EditStockModal";
+import AddDrinkModal from "@/components/AddDrinkModal";
 
 type Drink = {
   id: number;
@@ -14,6 +15,7 @@ type Drink = {
 export default function LagerPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     load();
@@ -31,9 +33,7 @@ export default function LagerPage() {
     await fetch(`/api/drinks/${selectedDrink.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        stock: newStock,
-      }),
+      body: JSON.stringify({ stock: newStock }),
     });
 
     setSelectedDrink(null);
@@ -41,12 +41,35 @@ export default function LagerPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-28">
 
-      <h1 className="text-2xl font-semibold">
-        📦 Lagerverwaltung
-      </h1>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold flex items-center gap-2">
+          📦 Lagerverwaltung
+        </h1>
 
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="
+            flex items-center gap-2
+            bg-green-600 hover:bg-green-700
+            text-white
+            px-4 py-2
+            rounded-2xl
+            shadow-md
+            active:scale-95
+            transition
+          "
+        >
+          <span className="text-lg">＋</span>
+          <span className="text-sm font-medium hidden sm:inline">
+            Getränk
+          </span>
+        </button>
+      </div>
+
+      {/* Drink Cards */}
       <div className="space-y-5">
         {drinks.map((drink) => {
           const cases = Math.floor(
@@ -59,7 +82,17 @@ export default function LagerPage() {
             <div
               key={drink.id}
               onClick={() => setSelectedDrink(drink)}
-              className="cursor-pointer bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-4 border hover:scale-[1.02] transition"
+              className="
+                cursor-pointer
+                bg-white dark:bg-gray-900
+                rounded-3xl
+                shadow-xl
+                p-6
+                space-y-4
+                border
+                hover:scale-[1.02]
+                transition
+              "
             >
               <div className="flex justify-between items-center">
 
@@ -95,11 +128,23 @@ export default function LagerPage() {
         })}
       </div>
 
+      {/* Edit Stock Modal */}
       {selectedDrink && (
         <EditStockModal
           drink={selectedDrink}
           onClose={() => setSelectedDrink(null)}
           onSave={updateStock}
+        />
+      )}
+
+      {/* Add Drink Modal */}
+      {showAddModal && (
+        <AddDrinkModal
+          onClose={() => setShowAddModal(false)}
+          onCreated={() => {
+            setShowAddModal(false);
+            load();
+          }}
         />
       )}
 

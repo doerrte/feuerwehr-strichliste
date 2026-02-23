@@ -45,7 +45,7 @@ export default async function RootLayout({
             </header>
           )}
 
-          <main className="flex-1 overflow-y-auto px-4 py-6 pb-24">
+          <main className="flex-1 overflow-y-auto px-4 py-6 pb-32">
             {children}
           </main>
 

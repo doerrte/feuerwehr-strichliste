@@ -69,7 +69,7 @@ export default async function RootLayout({
           )}
 
           {/* ===== Content ===== */}
-          <main className="flex-1 overflow-y-auto px-4 py-6 pb-26">
+          <main className="flex-1 overflow-y-auto px-4 py-6 pb-24">
             {children}
           </main>
 

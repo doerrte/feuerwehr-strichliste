@@ -1,23 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 export default function LoginForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const redirect =
-    searchParams.get("redirect") || "/dashboard";
 
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleLogin(
-    e: React.FormEvent
-  ) {
+  async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError("");
@@ -38,14 +32,13 @@ export default function LoginForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(
-          data.error || "Login fehlgeschlagen"
-        );
+        setError(data.error || "Login fehlgeschlagen");
         setLoading(false);
         return;
       }
 
-      router.replace(redirect);
+      router.replace(data.redirect);
+
     } catch {
       setError("Serverfehler");
       setLoading(false);
@@ -53,68 +46,54 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-xl p-6 space-y-5 transition">
+    <main className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
+      <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-2xl shadow-xl p-6 space-y-4">
+        <h1 className="text-xl font-bold text-center">
+          🔐 Login
+        </h1>
 
-      <h1 className="text-xl font-semibold text-center">
-        🔐 Login
-      </h1>
-
-      <form
-        onSubmit={handleLogin}
-        className="space-y-4"
-      >
-        <div>
-          <label className="block text-sm font-medium">
-            Telefonnummer
-          </label>
-          <input
-            type="text"
-            value={phone}
-            onChange={(e) =>
-              setPhone(e.target.value)
-            }
-            className="border dark:border-gray-700 bg-white dark:bg-gray-800 p-2 rounded w-full"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium">
-            Passwort
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) =>
-              setPassword(e.target.value)
-            }
-            className="border dark:border-gray-700 bg-white dark:bg-gray-800 p-2 rounded w-full"
-            required
-          />
-        </div>
-
-        {error && (
-          <div className="text-red-600 text-sm">
-            {error}
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium">
+              Telefonnummer
+            </label>
+            <input
+              type="text"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="border p-2 rounded w-full"
+              required
+            />
           </div>
-        )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-red-600 text-white py-2 rounded-lg transition active:scale-95"
-        >
-          {loading
-            ? "Bitte warten..."
-            : "Einloggen"}
-        </button>
-      </form>
+          <div>
+            <label className="block text-sm font-medium">
+              Passwort
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="border p-2 rounded w-full"
+              required
+            />
+          </div>
 
-      <p className="text-xs text-gray-500 text-center">
-        Passwort vergessen?  
-        Bitte an den Getränkewart wenden.
-      </p>
+          {error && (
+            <div className="text-red-600 text-sm">
+              {error}
+            </div>
+          )}
 
-    </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 rounded-xl"
+          >
+            {loading ? "Bitte warten..." : "Einloggen"}
+          </button>
+        </form>
+      </div>
+    </main>
   );
 }

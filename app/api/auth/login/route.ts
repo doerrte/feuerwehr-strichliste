@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
 
 export async function POST(req: Request) {
@@ -18,25 +17,9 @@ export async function POST(req: Request) {
       where: { phone },
     });
 
-    if (!user) {
+    if (!user || !user.active) {
       return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
-    }
-
-    // 🔒 Gelöscht?
-    if (user.deletedAt) {
-      return NextResponse.json(
-        { error: "Benutzer wurde gelöscht" },
-        { status: 403 }
-      );
-    }
-
-    // 🔒 Deaktiviert?
-    if (!user.active) {
-      return NextResponse.json(
-        { error: "Benutzer ist deaktiviert" },
+        { error: "Benutzer nicht gefunden oder deaktiviert" },
         { status: 403 }
       );
     }
@@ -55,14 +38,13 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({
       success: true,
-      role: user.role,
+      redirect: user.hasSeenIntro ? "/dashboard" : "/intro",
     });
 
     response.cookies.set("userId", String(user.id), {
       httpOnly: true,
       path: "/",
       sameSite: "lax",
-      secure: true,
     });
 
     return response;

@@ -17,10 +17,10 @@ export async function POST(req: Request) {
       where: { phone },
     });
 
-    if (!user || !user.active) {
+    if (!user) {
       return NextResponse.json(
-        { error: "Benutzer nicht gefunden oder deaktiviert" },
-        { status: 403 }
+        { error: "Benutzer nicht gefunden" },
+        { status: 404 }
       );
     }
 
@@ -38,20 +38,19 @@ export async function POST(req: Request) {
 
     const response = NextResponse.json({
       success: true,
-      redirect: user.hasSeenIntro ? "/dashboard" : "/intro",
     });
 
     response.cookies.set("userId", String(user.id), {
       httpOnly: true,
-      path: "/",
+      secure: true,          // 🔥 WICHTIG für PWA
       sameSite: "lax",
-      secure: true,
+      path: "/",
     });
 
     return response;
 
   } catch (error) {
-    console.error("LOGIN ERROR:", error);
+    console.error(error);
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

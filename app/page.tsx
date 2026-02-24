@@ -14,6 +14,7 @@ export default function HomePage() {
       try {
         const res = await fetch("/api/auth/me", {
           credentials: "include",
+          cache: "no-store",
         });
 
         if (res.ok) {

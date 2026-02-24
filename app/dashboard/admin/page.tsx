@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import CreateUserModal from "@/components/CreateUserModal";
 import EditUserModal from "@/components/EditUserModal";
+import { UserPlusIcon } from "@heroicons/react/24/outline";
 
 type User = {
   id: number;
@@ -72,9 +73,9 @@ export default function AdminPage() {
       <div className="flex w-full">
         <button
           onClick={() => setShowCreate(true)}
-          className="px-4 py-2 rounded-xl bg-green-600 text-white shadow-md active:scale-95 transition"
+          className="px-4 py-2 rounded-l bg-green-600 text-white shadow-md active:scale-95 transition"
         >
-          ➕ Benutzer
+          <UserPlusIcon/>
         </button>
       </div>
 

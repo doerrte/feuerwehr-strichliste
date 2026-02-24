@@ -4,7 +4,9 @@ import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import LogoutButton from "@/components/LogoutButton";
 import Link from "next/link";
-import { UserIcon } from "@heroicons/react/24/outline";
+import { UserIcon,
+          ArrowRightStartOnRectangleIcon
+        } from "@heroicons/react/24/outline";
 
 type Props = {
   role: "USER" | "ADMIN";
@@ -38,7 +40,7 @@ export default function AppHeader({ role }: Props) {
       <Link href="/dashboard/profile">
         <UserIcon />
       </Link>
-      <LogoutButton />
+      <ArrowRightStartOnRectangleIcon />
     </div>
 
   </div>

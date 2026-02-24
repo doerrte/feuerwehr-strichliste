@@ -21,16 +21,20 @@ export default function ProfilePage() {
   }, []);
 
   async function loadUser() {
-    const res = await fetch("/api/auth/me", {
-      credentials: "include",
-    });
+  const res = await fetch("/api/auth/me", {
+    credentials: "include",
+    cache: "no-store",
+  });
 
-    if (res.ok) {
-      const data = await res.json();
-      setUser(data);
-      setPhone(data.phone);
+  if (res.ok) {
+    const data = await res.json();
+
+    if (data.user) {
+      setUser(data.user);
+      setPhone(data.user.phone ?? "");
     }
   }
+}
 
   async function handleSave() {
     setMessage("");
@@ -77,7 +81,7 @@ export default function ProfilePage() {
 
         <div>
           <label className="block text-sm font-medium mb-1">
-            Name
+          
           </label>
           <input
             value={user.name}

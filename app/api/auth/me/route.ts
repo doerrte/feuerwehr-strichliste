@@ -24,6 +24,7 @@ export async function GET() {
       select: {
         id: true,
         name: true,
+        phone: true,
         role: true,
         active: true,
       },
@@ -45,6 +46,7 @@ export async function GET() {
         user: {
           id: user.id,
           name: user.name,
+          phone: user.phone,
           role: user.role,
         },
       },

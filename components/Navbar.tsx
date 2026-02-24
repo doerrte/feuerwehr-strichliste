@@ -2,6 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  HomeIcon,
+  UserIcon,
+  ChartBarIcon,
+  ArchiveBoxIcon,
+  UsersIcon,
+  ClipboardDocumentListIcon,
+} from "@heroicons/react/24/outline";
 
 type Props = {
   role: "USER" | "ADMIN";
@@ -13,19 +21,18 @@ export default function Navbar({ role }: Props) {
   const navItems =
     role === "ADMIN"
       ? [
-          { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-          { href: "/dashboard/admin/strichliste", label: "Striche", icon: "📊" },
-          { href: "/dashboard/admin/lager", label: "Lager", icon: "📦" },
-          { href: "/dashboard/admin", label: "Benutzer", icon: "👥" },
-          { href: "/dashboard/profile", label: "Profil", icon: "👤" },
-          { href: "/dashboard/admin/logs", label: "Logs", icon: "📜" },
+          { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
+          { href: "/dashboard/admin/strichliste", label: "Striche", icon: ChartBarIcon },
+          { href: "/dashboard/admin/lager", label: "Lager", icon: ArchiveBoxIcon },
+          { href: "/dashboard/admin", label: "Benutzer", icon: UsersIcon },
+          { href: "/dashboard/profile", label: "Profil", icon: UserIcon },
+          { href: "/dashboard/admin/logs", label: "Logs", icon: ClipboardDocumentListIcon },
         ]
       : [
-          { href: "/dashboard", label: "Dashboard", icon: "🏠" },
-          { href: "/dashboard/profile", label: "Profil", icon: "👤" },
+          { href: "/dashboard", label: "Dashboard", icon: HomeIcon },
+          { href: "/dashboard/profile", label: "Profil", icon: UserIcon },
         ];
 
-  // 🔥 Nur längster Match wird aktiv
   function getActiveHref() {
     const matches = navItems
       .map((item) => {
@@ -50,7 +57,7 @@ export default function Navbar({ role }: Props) {
     <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-50">
       <div
         className="
-          bg-white/80 dark:bg-gray-900/80
+          bg-white/90 dark:bg-gray-900/90
           backdrop-blur-2xl
           rounded-3xl
           shadow-2xl
@@ -60,10 +67,11 @@ export default function Navbar({ role }: Props) {
           scrollbar-hide
         "
       >
-        <div className="flex items-center gap-2 min-w-max">
+        <div className="flex items-center gap-1 min-w-max">
 
           {navItems.map((item) => {
             const active = activeHref === item.href;
+            const Icon = item.icon;
 
             return (
               <Link
@@ -87,13 +95,11 @@ export default function Navbar({ role }: Props) {
                     <div className="absolute inset-0 bg-red-50 dark:bg-red-900/30 rounded-2xl -z-10" />
                   )}
 
-                  <span
-                    className={`text-xl transition-transform duration-300 ${
-                      active ? "scale-110" : ""
+                  <Icon
+                    className={`w-6 h-6 transition-transform duration-300 ${
+                      active ? "scale-110 stroke-2" : "stroke-1"
                     }`}
-                  >
-                    {item.icon}
-                  </span>
+                  />
 
                   <span className="text-[11px] font-medium tracking-wide">
                     {item.label}

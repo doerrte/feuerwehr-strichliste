@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import Link from "next/link";
 import { UserIcon,
-          ArrowRightStartOnRectangleIcon
+         ArrowRightStartOnRectangleIcon,
         } from "@heroicons/react/24/outline";
 
 type Props = {

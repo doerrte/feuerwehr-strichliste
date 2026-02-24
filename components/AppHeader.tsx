@@ -39,7 +39,9 @@ export default function AppHeader({ role }: Props) {
       <Link href="/dashboard/profile">
         <UserIcon />
       </Link>
-      <ArrowRightStartOnRectangleIcon />
+        <Link href="/api/auth/logout">
+          <ArrowRightStartOnRectangleIcon/>
+        </Link>
     </div>
 
   </div>

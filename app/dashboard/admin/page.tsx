@@ -69,9 +69,19 @@ export default function AdminPage() {
         <h1 className="text-2xl font-semibold">
           Benutzerverwaltung
         </h1>
-      </div>
-      <div className="flex w-full" onClick={() => setShowCreate(true)}>
-          <UserPlusIcon/>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="
+              p-3 rounded-2xl
+              bg-red-600 hover:bg-red-700
+              text-white
+              shadow-md
+              active:scale-95
+              transition
+            "
+          >
+          <UserPlusIcon className="w-6 h-6" />
+      </button>
       </div>
 
       {/* Aktive Benutzer */}

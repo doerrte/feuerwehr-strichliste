@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import type { Metadata } from "next";
+import LogoutButton from "@/components/LogoutButton";
 
 export const metadata: Metadata = {
   title: "Feuerwehr Getränkeliste",
@@ -45,12 +46,12 @@ export default async function RootLayout({
           {user && (
             <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
               <h1 className="text-sm font-semibold tracking-wide">
-                Einheit 5 Strichliste
+                Feuerwehr Bedburg Einheit 5 Strichliste
               </h1>
 
               <div className="flex items-center gap-3">
                 <ThemeToggle />
-                <ArrowRightStartOnRectangleIcon />
+                <LogoutButton />
               </div>
             </header>
           )}

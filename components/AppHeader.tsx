@@ -36,7 +36,7 @@ export default function AppHeader({ role }: Props) {
     <div className="flex items-center gap-4">
       <ThemeToggle />
       <Link href="/dashboard/profile">
-        <UserIcon className="w-6 h-6 text-gray-500 hover:text-red-600 transition" />
+        <UserIcon />
       </Link>
       <LogoutButton />
     </div>

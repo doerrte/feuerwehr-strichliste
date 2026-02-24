@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import LoginForm from "./LoginForm";
+import LoginForm from "../login/LoginForm";
 
 export default function LoginPage() {
   const router = useRouter();

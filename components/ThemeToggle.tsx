@@ -7,30 +7,32 @@ export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    const saved = localStorage.getItem("theme");
-    if (saved === "dark") {
-      document.documentElement.classList.add("dark");
-      setDark(true);
-    }
+    const isDark = document.documentElement.classList.contains("dark");
+    setDark(isDark);
   }, []);
 
   function toggleTheme() {
-    if (dark) {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    } else {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    }
-    setDark(!dark);
+    const html = document.documentElement;
+    html.classList.toggle("dark");
+    setDark(html.classList.contains("dark"));
   }
 
   return (
     <button
       onClick={toggleTheme}
-      className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center transition"
+      className="
+        p-2 rounded-xl
+        bg-gray-100 dark:bg-gray-800
+        text-gray-600 dark:text-gray-300
+        hover:bg-gray-200 dark:hover:bg-gray-700
+        transition
+      "
     >
-      {dark ? <MoonIcon /> : <SunIcon/>}
+      {dark ? (
+        <SunIcon className="w-5 h-5" />
+      ) : (
+        <MoonIcon className="w-5 h-5" />
+      )}
     </button>
   );
 }

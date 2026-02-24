@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/Navbar";
 import ThemeToggle from "@/components/ThemeToggle";
-import LogoutButton from "@/components/LogoutButton";
+import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -50,7 +50,7 @@ export default async function RootLayout({
 
               <div className="flex items-center gap-3">
                 <ThemeToggle />
-                <LogoutButton />
+                <ArrowRightStartOnRectangleIcon />
               </div>
             </header>
           )}

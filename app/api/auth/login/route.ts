@@ -45,6 +45,7 @@ export async function POST(req: Request) {
       httpOnly: true,
       path: "/",
       sameSite: "lax",
+      secure: true,
     });
 
     return response;

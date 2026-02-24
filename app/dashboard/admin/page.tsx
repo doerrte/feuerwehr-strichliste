@@ -68,10 +68,11 @@ export default function AdminPage() {
         <h1 className="text-2xl font-semibold">
           Benutzerverwaltung
         </h1>
-
+      </div>
+      <div className="flex w-full">
         <button
           onClick={() => setShowCreate(true)}
-          className="px-4 py-2 rounded-2xl bg-green-600 text-white shadow-md active:scale-95 transition"
+          className="px-4 py-2 rounded-xl bg-green-600 text-white shadow-md active:scale-95 transition"
         >
           ➕ Benutzer
         </button>

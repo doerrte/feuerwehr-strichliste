@@ -34,8 +34,7 @@ export async function GET() {
       (drink) => ({
         id: drink.id,
         name: drink.name,
-        amount:
-          drink.counts[0]?.amount ?? 0,
+        myAmount: drink.counts[0]?.amount ?? 0,
         stock: drink.stock,
         unitsPerCase:
           drink.unitsPerCase,

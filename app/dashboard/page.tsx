@@ -27,17 +27,31 @@ export default function DashboardPage() {
   }, []);
 
   async function load() {
+  try {
     const [drinksRes, meRes] = await Promise.all([
-      fetch("/api/drinks/me", { credentials: "include" }),
-      fetch("/api/auth/me", { credentials: "include" }),
+      fetch("/api/drinks/me", {
+        credentials: "include",
+        cache: "no-store",
+      }),
+      fetch("/api/auth/me", {
+        credentials: "include",
+        cache: "no-store",
+      }),
     ]);
 
-    const drinksData = await drinksRes.json();
-    const meData = await meRes.json();
+    if (drinksRes.ok) {
+      const drinksData = await drinksRes.json();
+      setDrinks(drinksData);
+    }
 
-    setDrinks(drinksData);
-    setMe(meData);
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      setMe(meData.user); // 🔥 HIER
+    }
+  } catch (err) {
+    console.error("LOAD ERROR:", err);
   }
+}
 
   function changeValue(id: number, delta: number) {
     setInputs((prev) => {

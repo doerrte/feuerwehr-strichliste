@@ -30,7 +30,7 @@ export default function ThemeToggle() {
       onClick={toggleTheme}
       className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center transition"
     >
-      {dark ? <SunIcon /> : <MoonIcon/>}
+      {dark ? <MoonIcon /> : <SunIcon/>}
     </button>
   );
 }

@@ -47,7 +47,7 @@ export default function Navbar({ role }: Props) {
 
   const activeHref = getActiveHref();
 
-  return (
+ return (
   <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-50">
     <div
       className="

@@ -37,8 +37,9 @@ export default function LoginForm() {
         return;
       }
 
-      window.location.href = data.redirect;
-      
+      // ✅ FIX: Kein redirect aus API verwenden
+      router.replace("/dashboard");
+
     } catch {
       setError("Serverfehler");
       setLoading(false);

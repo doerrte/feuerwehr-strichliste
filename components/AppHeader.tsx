@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
-import LogoutButton from "@/components/LogoutButton";
 import Link from "next/link";
 import { UserIcon,
           ArrowRightStartOnRectangleIcon

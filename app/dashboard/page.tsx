@@ -100,8 +100,8 @@ export default function DashboardPage() {
             <p className="text-sm text-gray-500">
               Hallo {me?.name}
             </p>
-            <h1 className="text-2xl font-bold">
-              Dashboard
+            <h1 className="text-1xl font-bold">
+              Deine Strichliste
             </h1>
           </div>
 
@@ -111,7 +111,7 @@ export default function DashboardPage() {
         </div>
 
         <p className="text-gray-500 text-sm">
-          Getränke buchen & Überblick behalten
+          Striche machen am Smartphone & Überblick behalten
         </p>
       </div>
 

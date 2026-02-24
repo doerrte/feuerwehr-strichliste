@@ -45,7 +45,7 @@ export default async function RootLayout({
           {user && (
             <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
               <h1 className="text-sm font-semibold tracking-wide">
-                Feuerwehr Getränke
+                Einheit 5 Strichliste
               </h1>
 
               <div className="flex items-center gap-3">

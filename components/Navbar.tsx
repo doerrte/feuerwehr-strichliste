@@ -17,6 +17,7 @@ export default function Navbar({ role }: Props) {
           { href: "/dashboard/admin/strichliste", label: "Striche", icon: "📊" },
           { href: "/dashboard/admin/lager", label: "Lager", icon: "📦" },
           { href: "/dashboard/admin", label: "Benutzer", icon: "👥" },
+          { href: "/dashboard/profile", label: "Profil", icon: "👤" },
           { href: "/dashboard/admin/logs", label: "Logs", icon: "📜" },
         ]
       : [

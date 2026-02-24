@@ -111,85 +111,66 @@ export default function DashboardPage() {
             drink.stock % drink.unitsPerCase;
 
           return (
-            <div
-              key={drink.id}
-              className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5 border border-gray-100 dark:border-gray-800 backdrop-blur-xl"
+  <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-full max-w-md px-4 z-50">
+    <div
+      className="
+        bg-white/80 dark:bg-gray-900/80
+        backdrop-blur-2xl
+        rounded-3xl
+        shadow-2xl
+        border border-white/20 dark:border-gray-800
+        px-2 py-2
+        overflow-x-auto
+        scrollbar-hide
+      "
+    >
+      <div className="flex items-center gap-2 min-w-max">
+
+        {navItems.map((item) => {
+          const active = activeHref === item.href;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex-shrink-0"
             >
-              <div className="flex justify-between items-start">
-
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    {drink.name}
-                  </h3>
-
-                  {drink.myAmount > 0 && (
-                    <div className="mt-2 inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full">
-                      Deine Striche: {drink.myAmount}
-                    </div>
-                  )}
-                </div>
-
-                {drink.stock <= drink.minStock && (
-                  <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
-                    ⚠ Niedriger Bestand
-                  </span>
-                )}
-              </div>
-
-              <div className="text-sm text-gray-500 space-y-1">
-                <div>
-                  Bestand:{" "}
-                  <span className="font-medium">
-                    {cases} Kisten + {bottles} Flaschen
-                  </span>
-                </div>
-              </div>
-
-              {/* Counter */}
-              <div className="flex items-center justify-center gap-8">
-
-                <button
-                  onClick={() =>
-                    changeValue(drink.id, -1)
+              <div
+                className={`
+                  relative flex flex-col items-center justify-center gap-1
+                  px-4 py-2 rounded-2xl
+                  transition-all duration-300
+                  ${
+                    active
+                      ? "text-red-600"
+                      : "text-gray-500 dark:text-gray-400"
                   }
-                  className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 text-xl font-semibold active:scale-90 transition"
-                >
-                  −
-                </button>
-
-                <input
-                  type="number"
-                  value={inputs[drink.id] || ""}
-                  onChange={(e) =>
-                    setInputs((prev) => ({
-                      ...prev,
-                      [drink.id]: e.target.value,
-                    }))
-                  }
-                  placeholder="0"
-                  className="w-16 text-center text-lg font-semibold bg-transparent outline-none"
-                />
-
-                <button
-                  onClick={() =>
-                    changeValue(drink.id, 1)
-                  }
-                  className="w-12 h-12 rounded-full bg-green-600 text-white text-xl font-semibold shadow-md active:scale-90 transition"
-                >
-                  +
-                </button>
-              </div>
-
-              <button
-                onClick={() => openConfirm(drink)}
-                className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium active:scale-[0.98] transition shadow-md"
+                `}
               >
-                Buchen
-              </button>
-            </div>
+                {active && (
+                  <div className="absolute inset-0 bg-red-50 dark:bg-red-900/30 rounded-2xl -z-10" />
+                )}
+
+                <span
+                  className={`text-xl transition-transform duration-300 ${
+                    active ? "scale-110" : ""
+                  }`}
+                >
+                  {item.icon}
+                </span>
+
+                <span className="text-[11px] font-medium tracking-wide">
+                  {item.label}
+                </span>
+              </div>
+            </Link>
           );
         })}
+
       </div>
+    </div>
+  </div>
+);
 
       {/* Confirm Modal */}
       {confirmDrink && (

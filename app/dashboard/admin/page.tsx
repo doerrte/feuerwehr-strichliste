@@ -73,7 +73,7 @@ export default function AdminPage() {
           onClick={() => setShowCreate(true)}
           className="
             p-3 rounded-2xl
-            bg-red-600 hover:bg-red-700
+            bg-green-600 hover:bg-green-700
             text-white
             shadow-md
             active:scale-95

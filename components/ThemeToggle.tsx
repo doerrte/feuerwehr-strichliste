@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { SunIcon, MoonIcon } from "@heroicons/react/24/outline";
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
@@ -29,7 +30,7 @@ export default function ThemeToggle() {
       onClick={toggleTheme}
       className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center transition"
     >
-      {dark ? "☀️" : "🌙"}
+      {dark ? <SunIcon /> : <MoonIcon/>}
     </button>
   );
 }

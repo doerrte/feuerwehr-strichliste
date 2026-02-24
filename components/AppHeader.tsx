@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import ThemeToggle from "@/components/ThemeToggle";
 import LogoutButton from "@/components/LogoutButton";
 import Link from "next/link";
+import { UserIcon } from "@heroicons/react/24/outline";
 
 type Props = {
   role: "USER" | "ADMIN";
@@ -25,24 +26,22 @@ export default function AppHeader({ role }: Props) {
   }
 
   return (
-    <header className="flex-shrink-0 px-6 py-4 border-b dark:border-gray-800 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl flex items-center justify-between">
+    <header className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800">
+  <div className="max-w-md mx-auto px-6 py-4 flex items-center justify-between">
 
-      <h1 className="text-lg font-semibold tracking-tight">
-        {getTitle()}
-      </h1>
+    <h1 className="text-lg font-semibold tracking-tight">
+      {title}
+    </h1>
 
-      <div className="flex items-center gap-3">
-        <Link
-          href="/dashboard/profile"
-          className="w-9 h-9 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center hover:scale-105 transition"
-        >
-          👤
-        </Link>
-        
-        <ThemeToggle />
-        <LogoutButton />
-      </div>
+    <div className="flex items-center gap-4">
+      <ThemeToggle />
+      <Link href="/dashboard/profile">
+        <UserIcon className="w-6 h-6 text-gray-500 hover:text-red-600 transition" />
+      </Link>
+      <LogoutButton />
+    </div>
 
-    </header>
+  </div>
+</header>
   );
 }

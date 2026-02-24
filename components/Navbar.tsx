@@ -15,7 +15,9 @@ export default function Navbar({ role }: Props) {
   const isChild =
     pathname.startsWith(href + "/");
 
-  const active = isExact || isChild;
+  const active =
+  pathname === href ||
+  pathname.split("/").slice(0, href.split("/").length).join("/") === href;
 
   return (
     <Link

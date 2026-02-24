@@ -70,13 +70,8 @@ export default function AdminPage() {
           Benutzerverwaltung
         </h1>
       </div>
-      <div className="flex w-full">
-        <button
-          onClick={() => setShowCreate(true)}
-          className="px-4 py-2 rounded-l bg-green-600 text-white shadow-md active:scale-95 transition"
-        >
+      <div className="flex w-full" onClick={() => setShowCreate(true)}>
           <UserPlusIcon/>
-        </button>
       </div>
 
       {/* Aktive Benutzer */}

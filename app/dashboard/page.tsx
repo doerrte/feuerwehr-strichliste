@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 type Drink = {
   id: number;
@@ -9,69 +8,91 @@ type Drink = {
   stock: number;
   unitsPerCase: number;
   minStock: number;
-  userStrikes: number;
+  myAmount: number;
+};
+
+type Me = {
+  id: number;
+  name: string;
 };
 
 export default function DashboardPage() {
-  const router = useRouter();
-
-  const [user, setUser] = useState<any>(null);
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [me, setMe] = useState<Me | null>(null);
+  const [inputs, setInputs] = useState<Record<number, string>>({});
+  const [confirmDrink, setConfirmDrink] = useState<Drink | null>(null);
 
   useEffect(() => {
-    async function init() {
-      const res = await fetch("/api/auth/me");
-      const data = await res.json();
+    load();
+  }, []);
 
-      if (!data.user) {
-        router.replace("/login");
-        return;
-      }
+  async function load() {
+    const [drinksRes, meRes] = await Promise.all([
+      fetch("/api/drinks/me", { credentials: "include" }),
+      fetch("/api/auth/me", { credentials: "include" }),
+    ]);
 
-      setUser(data.user);
+    const drinksData = await drinksRes.json();
+    const meData = await meRes.json();
 
-      const drinksRes = await fetch("/api/drinks/me");
-      const drinksData = await drinksRes.json();
-
-      setDrinks(drinksData);
-      setLoading(false);
-    }
-
-    init();
-  }, [router]);
-
-  if (loading) {
-    return (
-      <div className="p-6 text-center text-gray-500">
-        Lade Dashboard...
-      </div>
-    );
+    setDrinks(drinksData);
+    setMe(meData);
   }
 
-  const totalStrikes = drinks.reduce(
-    (sum, d) => sum + (d.userStrikes || 0),
+  function changeValue(id: number, delta: number) {
+    setInputs((prev) => {
+      const current = Number(prev[id] || 0);
+      const next = current + delta;
+      return { ...prev, [id]: next <= 0 ? "" : String(next) };
+    });
+  }
+
+  function openConfirm(drink: Drink) {
+    if (!inputs[drink.id]) return;
+    setConfirmDrink(drink);
+  }
+
+  async function confirmBooking() {
+    if (!confirmDrink) return;
+
+    const amount = Number(inputs[confirmDrink.id]);
+
+    await fetch("/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        drinkId: confirmDrink.id,
+        amount,
+      }),
+    });
+
+    setInputs((prev) => ({ ...prev, [confirmDrink.id]: "" }));
+    setConfirmDrink(null);
+    load();
+  }
+
+  const totalStriche = drinks.reduce(
+    (sum, d) => sum + (d.myAmount || 0),
     0
   );
 
   return (
     <div className="space-y-8 pb-28">
 
-      {/* Greeting */}
+      {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-gray-500">
-              Hallo {user.name}
+              Hallo {me?.name}
             </p>
-
-            <h1 className="text-2xl font-semibold">
+            <h1 className="text-2xl font-bold">
               Dashboard
             </h1>
           </div>
 
-          <div className="bg-red-600 text-white text-sm px-4 py-2 rounded-full shadow">
-            {totalStrikes} Striche
+          <div className="bg-red-600 text-white px-4 py-2 rounded-2xl shadow-lg text-sm font-semibold">
+            {totalStriche} Striche
           </div>
         </div>
 
@@ -81,7 +102,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Drink Cards */}
-      <div className="space-y-5">
+      <div className="space-y-6">
         {drinks.map((drink) => {
           const cases = Math.floor(
             drink.stock / drink.unitsPerCase
@@ -92,25 +113,115 @@ export default function DashboardPage() {
           return (
             <div
               key={drink.id}
-              className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 border space-y-3"
+              className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5 border border-gray-100 dark:border-gray-800 backdrop-blur-xl"
             >
-              <div className="flex justify-between">
-                <h3 className="font-semibold">
-                  {drink.name}
-                </h3>
+              <div className="flex justify-between items-start">
 
-                <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                  Deine Striche: {drink.userStrikes}
-                </span>
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {drink.name}
+                  </h3>
+
+                  {drink.myAmount > 0 && (
+                    <div className="mt-2 inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full">
+                      Deine Striche: {drink.myAmount}
+                    </div>
+                  )}
+                </div>
+
+                {drink.stock <= drink.minStock && (
+                  <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
+                    ⚠ Niedriger Bestand
+                  </span>
+                )}
               </div>
 
-              <div className="text-sm text-gray-500">
-                Bestand: {cases} Kisten + {bottles} Flaschen
+              <div className="text-sm text-gray-500 space-y-1">
+                <div>
+                  Bestand:{" "}
+                  <span className="font-medium">
+                    {cases} Kisten + {bottles} Flaschen
+                  </span>
+                </div>
               </div>
+
+              {/* Counter */}
+              <div className="flex items-center justify-center gap-8">
+
+                <button
+                  onClick={() =>
+                    changeValue(drink.id, -1)
+                  }
+                  className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 text-xl font-semibold active:scale-90 transition"
+                >
+                  −
+                </button>
+
+                <input
+                  type="number"
+                  value={inputs[drink.id] || ""}
+                  onChange={(e) =>
+                    setInputs((prev) => ({
+                      ...prev,
+                      [drink.id]: e.target.value,
+                    }))
+                  }
+                  placeholder="0"
+                  className="w-16 text-center text-lg font-semibold bg-transparent outline-none"
+                />
+
+                <button
+                  onClick={() =>
+                    changeValue(drink.id, 1)
+                  }
+                  className="w-12 h-12 rounded-full bg-green-600 text-white text-xl font-semibold shadow-md active:scale-90 transition"
+                >
+                  +
+                </button>
+              </div>
+
+              <button
+                onClick={() => openConfirm(drink)}
+                className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium active:scale-[0.98] transition shadow-md"
+              >
+                Buchen
+              </button>
             </div>
           );
         })}
       </div>
+
+      {/* Confirm Modal */}
+      {confirmDrink && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
+            <h3 className="text-lg font-semibold">
+              Buchung bestätigen
+            </h3>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {inputs[confirmDrink.id]}x{" "}
+              {confirmDrink.name} buchen?
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmDrink(null)}
+                className="flex-1 py-2 rounded-xl bg-gray-200 dark:bg-gray-800"
+              >
+                Abbrechen
+              </button>
+
+              <button
+                onClick={confirmBooking}
+                className="flex-1 py-2 rounded-xl bg-red-600 text-white"
+              >
+                Bestätigen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

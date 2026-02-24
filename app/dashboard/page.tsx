@@ -1,119 +1,88 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Drink = {
   id: number;
   name: string;
-  amount: number;
   stock: number;
-  minStock: number;
   unitsPerCase: number;
-};
-
-type User = {
-  name: string;
+  minStock: number;
+  userStrikes: number;
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
+
+  const [user, setUser] = useState<any>(null);
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [inputs, setInputs] = useState<Record<number, string>>({});
-  const [confirmDrink, setConfirmDrink] = useState<Drink | null>(null);
-  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    load();
-    loadUser();
-  }, []);
-
-  async function load() {
-    const res = await fetch("/api/drinks/me", {
-      credentials: "include",
-    });
-    const data = await res.json();
-    setDrinks(data);
-  }
-
-  async function loadUser() {
-    const res = await fetch("/api/auth/me", {
-      credentials: "include",
-    });
-    if (res.ok) {
+    async function init() {
+      const res = await fetch("/api/auth/me");
       const data = await res.json();
-      setUser(data);
+
+      if (!data.user) {
+        router.replace("/login");
+        return;
+      }
+
+      setUser(data.user);
+
+      const drinksRes = await fetch("/api/drinks/me");
+      const drinksData = await drinksRes.json();
+
+      setDrinks(drinksData);
+      setLoading(false);
     }
+
+    init();
+  }, [router]);
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center text-gray-500">
+        Lade Dashboard...
+      </div>
+    );
   }
 
-  const totalStriche = drinks.reduce(
-    (sum, drink) => sum + drink.amount,
+  const totalStrikes = drinks.reduce(
+    (sum, d) => sum + (d.userStrikes || 0),
     0
   );
 
-  function changeValue(id: number, delta: number) {
-    setInputs((prev) => {
-      const current = Number(prev[id] || 0);
-      const next = current + delta;
-      return { ...prev, [id]: next <= 0 ? "" : String(next) };
-    });
-  }
-
-  function openConfirm(drink: Drink) {
-    if (!inputs[drink.id]) return;
-    setConfirmDrink(drink);
-  }
-
-  async function confirmBooking() {
-    if (!confirmDrink) return;
-
-    const amount = Number(inputs[confirmDrink.id]);
-
-    await fetch("/api/scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        drinkId: confirmDrink.id,
-        amount,
-      }),
-    });
-
-    setInputs((prev) => ({ ...prev, [confirmDrink.id]: "" }));
-    setConfirmDrink(null);
-    load();
-  }
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-28">
 
-      {/* Header Bereich */}
-      <div className="flex justify-between items-center">
+      {/* Greeting */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-gray-500">
+              Hallo {user.name}
+            </p>
 
-        <div>
-          <p className="text-sm text-gray-500">
-            Hallo {user?.name}
-          </p>
-
-          <h2 className="text-2xl font-semibold tracking-tight">
-            Dashboard
-          </h2>
-        </div>
-
-        {/* 🔵 Gesamt Badge */}
-        <div className="relative">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white shadow-lg">
-            🍺
+            <h1 className="text-2xl font-semibold">
+              Dashboard
+            </h1>
           </div>
 
-          <span className="absolute -top-2 -right-2 bg-white dark:bg-gray-900 text-red-600 text-xs font-bold px-2 py-1 rounded-full shadow">
-            {totalStriche}
-          </span>
+          <div className="bg-red-600 text-white text-sm px-4 py-2 rounded-full shadow">
+            {totalStrikes} Striche
+          </div>
         </div>
 
+        <p className="text-gray-500 text-sm">
+          Getränke buchen & Überblick behalten
+        </p>
       </div>
 
       {/* Drink Cards */}
-      <div className="space-y-6">
+      <div className="space-y-5">
         {drinks.map((drink) => {
-
           const cases = Math.floor(
             drink.stock / drink.unitsPerCase
           );
@@ -123,101 +92,25 @@ export default function DashboardPage() {
           return (
             <div
               key={drink.id}
-              className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-lg p-6 space-y-4 border"
+              className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 border space-y-3"
             >
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">
+              <div className="flex justify-between">
+                <h3 className="font-semibold">
                   {drink.name}
                 </h3>
 
                 <span className="text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                  Deine Striche: {drink.amount}
+                  Deine Striche: {drink.userStrikes}
                 </span>
               </div>
 
               <div className="text-sm text-gray-500">
-                Bestand:{" "}
-                <strong>
-                  {cases} Kisten + {bottles} Flaschen
-                </strong>
+                Bestand: {cases} Kisten + {bottles} Flaschen
               </div>
-
-              {drink.stock <= drink.minStock && (
-                <div className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full inline-block">
-                  ⚠ Niedriger Bestand
-                </div>
-              )}
-
-              <div className="flex items-center justify-center gap-6 pt-2">
-                <button
-                  onClick={() => changeValue(drink.id, -1)}
-                  className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 text-xl font-semibold select-none active:scale-90 transition"
-                >
-                  −
-                </button>
-
-                <input
-                  type="number"
-                  value={inputs[drink.id] || ""}
-                  onChange={(e) =>
-                    setInputs((prev) => ({
-                      ...prev,
-                      [drink.id]: e.target.value,
-                    }))
-                  }
-                  placeholder="0"
-                  className="w-16 text-center text-lg font-medium bg-transparent outline-none"
-                />
-
-                <button
-                  onClick={() => changeValue(drink.id, 1)}
-                  className="w-12 h-12 rounded-full bg-green-600 text-white text-xl font-semibold select-none active:scale-90 transition shadow-md"
-                >
-                  +
-                </button>
-              </div>
-
-              <button
-                onClick={() => openConfirm(drink)}
-                className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium active:scale-[0.98] transition shadow-md"
-              >
-                Buchen
-              </button>
             </div>
           );
         })}
       </div>
-
-      {/* Confirm Modal bleibt wie gehabt */}
-      {confirmDrink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
-            <h3 className="text-lg font-semibold">
-              Buchung bestätigen
-            </h3>
-
-            <p className="text-sm text-gray-600">
-              {inputs[confirmDrink.id]}x {confirmDrink.name} buchen?
-            </p>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDrink(null)}
-                className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-gray-700"
-              >
-                Abbrechen
-              </button>
-
-              <button
-                onClick={confirmBooking}
-                className="flex-1 py-2 rounded-xl bg-red-600 text-white"
-              >
-                Bestätigen
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

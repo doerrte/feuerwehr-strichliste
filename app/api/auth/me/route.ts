@@ -6,13 +6,17 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const userId = Number(cookies().get("userId")?.value);
+    const cookieStore = cookies();
+    const userIdCookie = cookieStore.get("userId");
+
+    if (!userIdCookie) {
+      return NextResponse.json({ user: null }, { status: 200 });
+    }
+
+    const userId = Number(userIdCookie.value);
 
     if (!userId) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ user: null }, { status: 200 });
     }
 
     const user = await prisma.user.findUnique({
@@ -27,26 +31,31 @@ export async function GET() {
 
     if (!user || !user.active) {
       const response = NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
+        { user: null },
+        { status: 200 }
       );
 
       response.cookies.delete("userId");
-      response.cookies.delete("role");
 
       return response;
     }
 
-    return NextResponse.json({
-      id: user.id,
-      name: user.name,
-      role: user.role,
-    });
-
-  } catch {
     return NextResponse.json(
-      { error: "Serverfehler" },
-      { status: 500 }
+      {
+        user: {
+          id: user.id,
+          name: user.name,
+          role: user.role,
+        },
+      },
+      { status: 200 }
+    );
+  } catch (error) {
+    console.error("AUTH ME ERROR:", error);
+
+    return NextResponse.json(
+      { user: null },
+      { status: 200 }
     );
   }
 }

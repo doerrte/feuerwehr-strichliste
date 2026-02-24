@@ -11,32 +11,36 @@ export default function Navbar({ role }: Props) {
   const pathname = usePathname();
 
   function item(href: string, label: string, icon: string) {
-    const active = pathname.startsWith(href);
+  const isExact = pathname === href;
+  const isChild =
+    pathname.startsWith(href + "/");
 
-    return (
-      <Link
-        href={href}
-        className="flex flex-col items-center flex-1"
+  const active = isExact || isChild;
+
+  return (
+    <Link
+      href={href}
+      className="flex flex-col items-center flex-1"
+    >
+      <div
+        className={`flex flex-col items-center gap-1 transition-all duration-300 ${
+          active
+            ? "text-red-600 scale-110"
+            : "text-gray-500"
+        }`}
       >
-        <div
-          className={`flex flex-col items-center gap-1 transition-all duration-300 ${
-            active
-              ? "text-red-600 scale-110"
-              : "text-gray-500"
-          }`}
-        >
-          <span className="text-xl">{icon}</span>
-          <span className="text-xs font-medium">
-            {label}
-          </span>
+        <span className="text-xl">{icon}</span>
+        <span className="text-xs font-medium">
+          {label}
+        </span>
 
-          {active && (
-            <div className="w-1 h-1 bg-red-600 rounded-full mt-1" />
-          )}
-        </div>
-      </Link>
-    );
-  }
+        {active && (
+          <div className="w-1 h-1 bg-red-600 rounded-full mt-1" />
+        )}
+      </div>
+    </Link>
+  );
+}
 
   return (
   <div className="fixed bottom-5 left-1/2 -translate-x-1/2 w-full max-w-lg px-4 z-40">
@@ -54,8 +58,7 @@ export default function Navbar({ role }: Props) {
 
       {item("/dashboard", "Dashboard", "🏠")}
 
-      {role === "USER" &&
-        item("/dashboard/profile", "Profil", "👤")}
+      {item("/dashboard/profile", "Profil", "👤")}
 
       {role === "ADMIN" && (
         <>

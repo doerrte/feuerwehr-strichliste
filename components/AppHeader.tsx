@@ -30,7 +30,7 @@ export default function AppHeader({ role }: Props) {
   <div className="max-w-md mx-auto px-6 py-4 flex items-center justify-between">
 
     <h1 className="text-lg font-semibold tracking-tight">
-      {title}
+      {getTitle()}
     </h1>
 
     <div className="flex items-center gap-4">

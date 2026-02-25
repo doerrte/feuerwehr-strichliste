@@ -15,7 +15,9 @@ export default function KioskPage() {
 
   useEffect(() => {
     async function loadUsers() {
-      const res = await fetch("/api/kiosk/users");
+      const res = await fetch("/api/kiosk/users", {
+        cache: "no-store",
+      });
       const data = await res.json();
       setUsers(data);
     }

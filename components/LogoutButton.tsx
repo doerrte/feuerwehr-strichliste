@@ -14,17 +14,15 @@ export default function LogoutButton({ redirectTo }: Props) {
   const router = useRouter();
 
   async function handleLogout() {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
+  const target = redirectTo ?? "/login";
 
-    //setOpen(false);
+  await fetch(`/api/auth/logout?redirect=${encodeURIComponent(target)}`, {
+    method: "POST",
+    credentials: "include",
+  });
 
-      // 🔥 HARTE Navigation
-      window.location.href = 
-      (redirectTo ?? "/login") + "?t=" + Date.now();
-  }
+  window.location.href = target;
+}
 
   return (
     <>

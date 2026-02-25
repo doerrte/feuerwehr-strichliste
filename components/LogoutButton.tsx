@@ -21,8 +21,8 @@ export default function LogoutButton({ redirectTo }: Props) {
 
     setOpen(false);
 
-    // 🚀 WICHTIG: Kein router.refresh()
-    router.replace(redirectTo ?? "/login");
+      // 🔥 HARTE Navigation
+      window.location.href = redirectTo ?? "/login";
   }
 
   return (

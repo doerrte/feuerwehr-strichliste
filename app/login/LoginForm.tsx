@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,27 +41,18 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="
-      relative min-h-screen flex items-center justify-center px-6
-      bg-black overflow-hidden
-    ">
+    <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
 
-      {/* 🔥 Background Glow */}
+      {/* 🔥 Hintergrund Glow */}
       <div className="absolute inset-0">
-        <div className="
-          absolute -top-40 -left-40 w-[500px] h-[500px]
-          bg-red-600 rounded-full blur-[160px] opacity-40
-        " />
-        <div className="
-          absolute -bottom-40 -right-40 w-[500px] h-[500px]
-          bg-red-800 rounded-full blur-[160px] opacity-40
-        " />
+        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] bg-red-600 rounded-full blur-[160px] opacity-40" />
+        <div className="absolute -bottom-40 -right-40 w-[500px] h-[500px] bg-red-800 rounded-full blur-[160px] opacity-40" />
       </div>
 
       {/* 🔐 Login Card */}
       <div className="
         relative z-10
-        w-full max-w-md
+        w-full max-w-md mx-6
         bg-white/10
         backdrop-blur-3xl
         border border-white/20
@@ -69,33 +61,38 @@ export default function LoginPage() {
         p-8 space-y-6
       ">
 
-        {/* Branding */}
-        <div className="text-center space-y-3">
-
+        {/* 🔥 Feuerwehr Logo */}
+        <div className="flex justify-center">
           <div className="
-            w-20 h-20 mx-auto
+            w-24 h-24
             rounded-2xl
-            bg-gradient-to-br from-red-500 to-red-700
+            bg-white/10
+            backdrop-blur-xl
+            border border-white/20
             flex items-center justify-center
-            text-3xl shadow-lg
+            shadow-lg
           ">
-            🧯
+            <Image
+              src="/icons/feuerwehr.png"
+              alt="Feuerwehr Logo"
+              width={60}
+              height={60}
+              priority
+            />
           </div>
+        </div>
 
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+        <div className="text-center space-y-1">
+          <h1 className="text-2xl font-bold text-white">
             Feuerwehr Bedburg
           </h1>
-
           <p className="text-sm text-white/60">
             Einheit 5 · Digitale Strichliste
           </p>
-
         </div>
 
-        {/* Divider */}
         <div className="h-px bg-white/20" />
 
-        {/* Form */}
         <form onSubmit={handleLogin} className="space-y-5">
 
           <div className="space-y-2">

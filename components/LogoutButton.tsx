@@ -19,10 +19,11 @@ export default function LogoutButton({ redirectTo }: Props) {
       credentials: "include",
     });
 
-    setOpen(false);
+    //setOpen(false);
 
       // 🔥 HARTE Navigation
-      window.location.href = redirectTo ?? "/login";
+      window.location.href = 
+      (redirectTo ?? "/login") + "?t=" + Date.now();
   }
 
   return (

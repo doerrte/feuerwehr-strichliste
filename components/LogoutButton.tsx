@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
 
 type Props = {
@@ -12,7 +12,6 @@ type Props = {
 export default function LogoutButton({ redirectTo }: Props) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
-  const pathname = usePathname();
 
   async function handleLogout() {
     await fetch("/api/auth/logout", {
@@ -22,14 +21,8 @@ export default function LogoutButton({ redirectTo }: Props) {
 
     setOpen(false);
 
-    // 🔥 Wenn redirectTo gesetzt ist → nutze es
-    if (redirectTo) {
-      router.replace(redirectTo);
-    } else {
-      router.replace("/login");
-    }
-
-    router.refresh();
+    // 🚀 WICHTIG: Kein router.refresh()
+    router.replace(redirectTo ?? "/login");
   }
 
   return (

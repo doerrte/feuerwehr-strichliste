@@ -3,7 +3,6 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import Navbar from "@/components/Navbar";
 import ThemeToggle from "@/components/ThemeToggle";
-import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
 import type { Metadata } from "next";
 import LogoutButton from "@/components/LogoutButton";
 
@@ -41,12 +40,30 @@ export default async function RootLayout({
     <html lang="de">
       <body className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100">
 
-        <div className="relative w-full max-w-md mx-auto min-h-screen flex flex-col bg-white dark:bg-gray-900 shadow-xl">
+        {/* Responsive App Container */}
+        <div
+          className="
+            relative
+            w-full
+            max-w-md
+            sm:max-w-lg
+            md:max-w-3xl
+            lg:max-w-5xl
+            mx-auto
+            min-h-screen
+            flex
+            flex-col
+            bg-white
+            dark:bg-gray-900
+            shadow-xl
+          "
+        >
 
           {user && (
-            <header className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
-              <h1 className="text-sm font-semibold tracking-wide">
-                Feuerwehr Bedburg <br />Einheit 5 Strichliste
+            <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+              <h1 className="text-sm sm:text-base font-semibold tracking-wide">
+                Feuerwehr Bedburg <br />
+                Einheit 5 Strichliste
               </h1>
 
               <div className="flex items-center gap-3">
@@ -56,7 +73,7 @@ export default async function RootLayout({
             </header>
           )}
 
-          <main className="flex-1 overflow-y-auto px-4 py-6 pb-32">
+          <main className="flex-1 overflow-y-auto px-6 py-6 pb-32">
             {children}
           </main>
 

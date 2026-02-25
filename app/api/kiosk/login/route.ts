@@ -36,12 +36,11 @@ export async function POST(req: Request) {
       success: true,
     });
 
-    response.cookies.set("userId", String(user.id), {
-      httpOnly: true,
-      secure: true,        // 🔥 WICHTIG
-      sameSite: "lax",
-      path: "/",
-    });
+    response.cookies.set("mode", "kiosk", {
+  httpOnly: true,
+  path: "/",
+  sameSite: "lax",
+});
 
     return response;
 

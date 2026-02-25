@@ -14,17 +14,14 @@ export default function LogoutButton({ redirectTo }: Props) {
   const router = useRouter();
 
   async function handleLogout() {
-  // 🔥 1️⃣ Erst zur Zielroute navigieren
-  const target = redirectTo || "/login";
-
-  // harter Redirect (kein App Router Race Condition)
-  window.location.href = target;
-
-  // 🔥 2️⃣ Dann Logout-Request fire & forget
-  fetch("/api/auth/logout", {
+  const res = await fetch("/api/auth/logout", {
     method: "POST",
     credentials: "include",
   });
+
+  const data = await res.json();
+
+  window.location.href = data.redirect;
 }
 
   return (

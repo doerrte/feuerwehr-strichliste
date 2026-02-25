@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const { userId, password } = await req.json();
+    const { userId, pin } = await req.json();
 
     const user = await prisma.user.findUnique({
       where: { id: Number(userId) },
@@ -20,11 +20,11 @@ export async function POST(req: Request) {
       );
     }
 
-    const valid = await bcrypt.compare(password, user.passwordHash);
+    const valid = await bcrypt.compare(pin, user.passwordHash);
 
     if (!valid) {
       return NextResponse.json(
-        { error: "Falsches Passwort" },
+        { error: "Falsche PIN" },
         { status: 401 }
       );
     }
@@ -33,14 +33,14 @@ export async function POST(req: Request) {
 
     response.cookies.set("userId", String(user.id), {
       httpOnly: true,
-      secure: true,          // 🔥 WICHTIG
+      secure: true,
       sameSite: "lax",
       path: "/",
     });
 
     response.cookies.set("mode", "kiosk", {
       httpOnly: true,
-      secure: true,          // 🔥 WICHTIG
+      secure: true,
       sameSite: "lax",
       path: "/",
     });

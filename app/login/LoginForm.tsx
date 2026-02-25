@@ -33,7 +33,7 @@ export default function LoginPage() {
         return;
       }
 
-      window.location.href = data.redirect;
+      window.location.href = data.redirect ?? "dashboard";
     } catch {
       setError("Serverfehler");
       setLoading(false);

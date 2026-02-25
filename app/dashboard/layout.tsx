@@ -21,7 +21,7 @@ export default function DashboardLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+ useEffect(() => {
     async function checkAuth() {
       const res = await fetch("/api/auth/me", {
         credentials: "include",
@@ -29,17 +29,28 @@ export default function DashboardLayout({
 
       const data = await res.json();
 
-      if (!data.user) {
+      // 🔥 NUR redirecten wenn wir wirklich im Dashboard sind
+      if (!data.user && pathname.startsWith("/dashboard")) {
         router.replace("/login");
         return;
       }
 
-      setUser(data.user);
       setLoading(false);
     }
 
     checkAuth();
-  }, [router]);
+  }, [router, pathname]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Lade...
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
 
   if (loading) {
     return (

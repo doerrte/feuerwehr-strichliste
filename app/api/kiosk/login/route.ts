@@ -15,15 +15,12 @@ export async function POST(req: Request) {
 
     if (!user || !user.active) {
       return NextResponse.json(
-        { error: "Ungültig" },
+        { error: "Ungültiger Benutzer" },
         { status: 401 }
       );
     }
 
-    const valid = await bcrypt.compare(
-      password,
-      user.passwordHash
-    );
+    const valid = await bcrypt.compare(password, user.passwordHash);
 
     if (!valid) {
       return NextResponse.json(
@@ -32,15 +29,21 @@ export async function POST(req: Request) {
       );
     }
 
-    const response = NextResponse.json({
-      success: true,
+    const response = NextResponse.json({ success: true });
+
+    response.cookies.set("userId", String(user.id), {
+      httpOnly: true,
+      secure: true,          // 🔥 WICHTIG
+      sameSite: "lax",
+      path: "/",
     });
 
     response.cookies.set("mode", "kiosk", {
-  httpOnly: true,
-  path: "/",
-  sameSite: "lax",
-});
+      httpOnly: true,
+      secure: true,          // 🔥 WICHTIG
+      sameSite: "lax",
+      path: "/",
+    });
 
     return response;
 

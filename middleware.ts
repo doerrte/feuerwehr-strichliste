@@ -19,5 +19,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/kiosk/:path*"],
+  matcher: ["/dashboard/:path*"], // Kiosk Hier entfernen
 };

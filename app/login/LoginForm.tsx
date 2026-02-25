@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -79,7 +80,10 @@ export default function LoginPage() {
             flex items-center justify-center
             text-3xl shadow-lg
           ">
-            🧯
+            <Image
+            src="@/public/icons/feuerwehr.png"
+            alt="Feuerwehr Stadt Bedburg Icon"
+            />
           </div>
 
           <h1 className="text-2xl font-bold text-white tracking-tight">

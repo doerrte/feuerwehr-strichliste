@@ -13,6 +13,11 @@ export default async function DashboardLayout({
   const cookieStore = cookies();
   const userId = cookieStore.get("userId")?.value;
 
+  // 🔥 WICHTIG: prüfen ob wir wirklich im Dashboard sind
+  const isDashboardRequest =
+    typeof window === "undefined"; 
+  // Server-only check
+
   if (!userId) {
     redirect("/login");
   }

@@ -41,7 +41,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen flex items-center justify-center overflow-hidden bg-black">
+    <main className="fixed inset-0 flex items-center justify-center bg-black">
 
       {/* 🔥 Hintergrund Glow */}
       <div className="absolute inset-0">

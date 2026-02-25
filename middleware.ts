@@ -2,11 +2,16 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function middleware(req: NextRequest) {
-  const userId = req.cookies.get("userId")?.value;
+  const userId = req.cookies.get("userId");
+  const { pathname } = req.nextUrl;
 
-  const isDashboard = req.nextUrl.pathname.startsWith("/dashboard");
+  // 🔥 Kiosk darf IMMER ohne Login erreichbar sein
+  if (pathname.startsWith("/kiosk")) {
+    return NextResponse.next();
+  }
 
-  if (isDashboard && !userId) {
+  // 🔐 Dashboard nur mit Login
+  if (!userId && pathname.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -14,5 +19,5 @@ export function middleware(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/dashboard/:path*", "/kiosk/:path*"],
 };

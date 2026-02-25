@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-export default function LoginForm() {
+export default function LoginPage() {
   const router = useRouter();
 
   const [phone, setPhone] = useState("");
@@ -37,9 +37,7 @@ export default function LoginForm() {
         return;
       }
 
-      // ✅ FIX: Kein redirect aus API verwenden
-      router.replace("/dashboard");
-
+      window.location.href = data.redirect;
     } catch {
       setError("Serverfehler");
       setLoading(false);
@@ -47,41 +45,75 @@ export default function LoginForm() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-950">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-sm rounded-2xl shadow-xl p-6 space-y-4">
-        <h1 className="text-xl font-bold text-center">
-          🔐 Login
-        </h1>
+    <main className="min-h-screen flex items-center justify-center px-6 bg-gradient-to-br from-red-600 via-red-500 to-red-700 dark:from-gray-950 dark:via-gray-900 dark:to-black">
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium">
+      {/* Glass Card */}
+      <div className="
+        w-full max-w-md
+        bg-white/90 dark:bg-gray-900/80
+        backdrop-blur-2xl
+        rounded-3xl
+        shadow-2xl
+        border border-white/30 dark:border-gray-800
+        p-8 space-y-6
+      ">
+
+        {/* Branding */}
+        <div className="text-center space-y-2">
+          <div className="text-4xl">🧯</div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            Feuerwehr Bedburg
+          </h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Einheit 5 – Getränkeliste
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleLogin} className="space-y-5">
+
+          <div className="space-y-1">
+            <label className="text-sm font-medium">
               Telefonnummer
             </label>
             <input
               type="text"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="border p-2 rounded w-full"
+              placeholder="z.B. 0176..."
+              className="
+                w-full p-3 rounded-2xl
+                bg-gray-100 dark:bg-gray-800
+                focus:outline-none
+                focus:ring-2 focus:ring-red-500
+                transition
+              "
               required
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium">
+          <div className="space-y-1">
+            <label className="text-sm font-medium">
               Passwort
             </label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="border p-2 rounded w-full"
+              placeholder="••••••••"
+              className="
+                w-full p-3 rounded-2xl
+                bg-gray-100 dark:bg-gray-800
+                focus:outline-none
+                focus:ring-2 focus:ring-red-500
+                transition
+              "
               required
             />
           </div>
 
           {error && (
-            <div className="text-red-600 text-sm">
+            <div className="text-sm text-red-600 text-center">
               {error}
             </div>
           )}
@@ -89,11 +121,20 @@ export default function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-xl"
+            className="
+              w-full py-3 rounded-2xl
+              bg-red-600 hover:bg-red-700
+              text-white font-medium
+              shadow-lg
+              active:scale-[0.98]
+              transition
+            "
           >
             {loading ? "Bitte warten..." : "Einloggen"}
           </button>
+
         </form>
+
       </div>
     </main>
   );

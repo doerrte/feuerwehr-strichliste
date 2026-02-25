@@ -21,7 +21,7 @@ export default function DashboardLayout({
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
- useEffect(() => {
+  useEffect(() => {
     async function checkAuth() {
       const res = await fetch("/api/auth/me", {
         credentials: "include",
@@ -51,16 +51,6 @@ export default function DashboardLayout({
 
   return <>{children}</>;
 }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Lade...
-      </div>
-    );
-  }
-
-  if (!user) return null;
 
   return (
     <div className="relative w-full max-w-md sm:max-w-lg md:max-w-3xl mx-auto min-h-screen flex flex-col bg-white dark:bg-gray-900 shadow-xl">

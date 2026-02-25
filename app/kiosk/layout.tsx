@@ -1,82 +1,59 @@
-"use client";
+import { cookies } from "next/headers";
+import { prisma } from "@/lib/prisma";
+import LogoutButton from "@/components/LogoutButton";
 
-import { useState } from "react";
-import { createPortal } from "react-dom";
-import { useRouter, usePathname } from "next/navigation";
-import { ArrowRightStartOnRectangleIcon } from "@heroicons/react/24/outline";
+export default async function KioskLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const cookieStore = cookies();
+  const userId = cookieStore.get("userId")?.value;
 
-type Props = {
-  redirectTo?: string;
-};
+  let user = null;
 
-export default function LogoutButton({ redirectTo }: Props) {
-  const [open, setOpen] = useState(false);
-  const router = useRouter();
-  const pathname = usePathname();
-
-  async function handleLogout() {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
+  if (userId) {
+    user = await prisma.user.findUnique({
+      where: { id: Number(userId) },
+      select: {
+        id: true,
+        name: true,
+      },
     });
-
-    setOpen(false);
-
-    // 🔥 Wenn redirectTo gesetzt ist → nutze es
-    if (redirectTo) {
-      router.replace(redirectTo);
-    } else {
-      router.replace("/login");
-    }
-
-    router.refresh();
   }
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="
-          p-2 rounded-xl
-          bg-gray-100 dark:bg-gray-800
-          text-gray-600 dark:text-gray-300
-          hover:bg-red-100 dark:hover:bg-red-900/40
-          hover:text-red-600
-          transition
-        "
-      >
-        <ArrowRightStartOnRectangleIcon className="w-5 h-5" />
-      </button>
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col">
 
-      {open &&
-        createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-            <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl space-y-4">
+      {/* Header */}
+      <header className="flex items-center justify-between px-8 py-6 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
 
-              <h3 className="text-lg font-semibold text-center">
-                Wirklich ausloggen?
-              </h3>
+        <div>
+          <h1 className="text-2xl font-semibold">
+            Feuerwehr Bedburg
+          </h1>
+          <p className="text-sm text-gray-500">
+            Tablet Strichliste
+          </p>
+        </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setOpen(false)}
-                  className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-gray-800"
-                >
-                  Abbrechen
-                </button>
+        {user && (
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-500">
+              {user.name}
+            </span>
 
-                <button
-                  onClick={handleLogout}
-                  className="flex-1 py-2 rounded-xl bg-red-600 text-white"
-                >
-                  Logout
-                </button>
-              </div>
-
-            </div>
-          </div>,
-          document.body
+            <LogoutButton redirectTo="/kiosk" />
+          </div>
         )}
-    </>
+
+      </header>
+
+      {/* Content */}
+      <main className="flex-1 p-10">
+        {children}
+      </main>
+
+    </div>
   );
 }

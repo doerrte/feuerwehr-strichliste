@@ -1,6 +1,5 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
-import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import ThemeToggle from "@/components/ThemeToggle";
 import LogoutButton from "@/components/LogoutButton";
@@ -13,27 +12,24 @@ export default async function DashboardLayout({
   const cookieStore = cookies();
   const userId = cookieStore.get("userId")?.value;
 
-  // 🔥 WICHTIG: prüfen ob wir wirklich im Dashboard sind
-  const isDashboardRequest =
-    typeof window === "undefined"; 
-  // Server-only check
+  let user = null;
 
-  if (!userId) {
-    redirect("/login");
+  if (userId) {
+    user = await prisma.user.findUnique({
+      where: { id: Number(userId) },
+      select: {
+        id: true,
+        name: true,
+        role: true,
+        active: true,
+      },
+    });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: Number(userId) },
-    select: {
-      id: true,
-      name: true,
-      role: true,
-      active: true,
-    },
-  });
+  // ❌ KEIN redirect() MEHR HIER
 
   if (!user || !user.active) {
-    redirect("/login");
+    return null; // Middleware übernimmt Redirect
   }
 
   return (

@@ -13,15 +13,29 @@ export default function KioskPage() {
   const [users, setUsers] = useState<User[]>([]);
   const router = useRouter();
 
-  useEffect(() => {
-    async function loadUsers() {
+  async function loadUsers() {
+    try {
       const res = await fetch("/api/kiosk/users", {
         cache: "no-store",
       });
+
       const data = await res.json();
       setUsers(data);
+    } catch (error) {
+      console.error("KIOSK LOAD ERROR:", error);
     }
+  }
+
+  useEffect(() => {
+    // 🔥 Erstes Laden
     loadUsers();
+
+    // 🔄 Auto Refresh alle 5 Sekunden
+    const interval = setInterval(() => {
+      loadUsers();
+    }, 5000);
+
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -47,7 +61,7 @@ export default function KioskPage() {
         </h1>
 
         <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
-          Bitte wähle dein Profil aus
+          Aktualisiert automatisch alle 5 Sekunden
         </p>
       </div>
 
@@ -79,7 +93,6 @@ export default function KioskPage() {
           >
             <div className="flex flex-col items-center gap-4">
 
-              {/* Avatar Circle */}
               <div className="
                 w-16 h-16
                 rounded-full

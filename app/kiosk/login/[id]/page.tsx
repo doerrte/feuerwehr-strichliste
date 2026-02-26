@@ -1,31 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 
 export default function KioskLoginPage() {
   const { id } = useParams();
   const router = useRouter();
 
-  const [password, setPassword] = useState("");
+  const [pin, setPin] = useState("");
   const [error, setError] = useState("");
-
-  // 🔥 Wenn kein Cookie mehr existiert → zurück zur Übersicht
-  useEffect(() => {
-    async function checkAuth() {
-      const res = await fetch("/api/auth/me", {
-        credentials: "include",
-      });
-
-      const data = await res.json();
-
-      if (!data.user) {
-        router.replace("/kiosk");
-      }
-    }
-
-    checkAuth();
-  }, [router]);
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -35,14 +18,14 @@ export default function KioskLoginPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId: id,
-        password,
+        password: pin,
       }),
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error);
+      setError(data.error || "Fehler");
       return;
     }
 
@@ -64,9 +47,9 @@ export default function KioskLoginPage() {
             type="password"
             inputMode="numeric"
             pattern="[0-9]*"
-            value={password}
+            value={pin}
             onChange={(e) =>
-              setPassword(e.target.value.replace(/\D/g, ""))
+              setPin(e.target.value.replace(/\D/g, ""))
             }
             placeholder="PIN"
             className="w-full p-4 rounded-2xl bg-gray-100 dark:bg-gray-800 text-center text-lg tracking-widest"

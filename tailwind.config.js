@@ -8,17 +8,17 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx}",
   ],
 
-  theme: {
-    extend: {
-      colors: {
-        primary: {
-          DEFAULT: "#2563eb",
-          dark: "#1e40af",
+        theme: {
+        extend: {
+          colors: {
+            feuerwehr: {
+              red: "#C8102E",
+              dark: "#111111",
+              gray: "#1F1F1F",
+              light: "#F4F4F4",
+            },
+          },
         },
-        success: "#16a34a",
-        danger: "#dc2626",
-        warning: "#f59e0b",
-        muted: "#6b7280",
       },
 
       borderRadius: {

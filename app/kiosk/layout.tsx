@@ -28,27 +28,34 @@ export default async function KioskLayout({
       {user && <KioskAutoLogout />}
 
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-6 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
+      <header className="bg-feuerwehr-red text-white px-10 py-6 flex items-center justify-between shadow-xl">
 
-        <div>
-          <h1 className="text-2xl font-semibold">
-            Feuerwehr Bedburg
-          </h1>
-          <p className="text-sm text-gray-500">
-            Tablet Strichliste
-          </p>
-        </div>
-
-        {user && (
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-500">
-              {user.name}
-            </span>
+            <img
+              src="/icons/feuerwehr.png"
+              alt="Feuerwehr"
+              className="w-12 h-12"
+            />
 
-            <LogoutButton redirectTo="/kiosk"/>
+            <div>
+              <h1 className="text-2xl font-bold tracking-wide">
+                Feuerwehr Bedburg
+              </h1>
+              <p className="text-sm opacity-90">
+                Einheit 5 – Strichliste
+              </p>
+            </div>
           </div>
-        )}
 
+          {user && (
+            <div className="flex items-center gap-4">
+              <span className="text-lg font-semibold">
+                {user.name}
+              </span>
+
+              <LogoutButton redirectTo="/kiosk" />
+            </div>
+          )}
       </header>
 
       {/* Content */}

@@ -57,7 +57,9 @@ export default async function DashboardLayout({
         {children}
       </main>
 
-      <Navbar role={user.role} />
+      {/* Navbar nur wenn NICHT Kiosk */}
+      {!isKiosk && <Navbar role={user.role} />}
+      
     </div>
   );
 }

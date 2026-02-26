@@ -95,9 +95,15 @@ export default function ProfilePage() {
             Telefonnummer
           </label>
           <input
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={15}
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full p-3 rounded-xl border bg-transparent"
+            onChange={(e) =>
+              setPhone(e.target.value.replace(/\D/g, ""))
+            }
+            className="w-full p-3 rounded-xl border bg-transparent text-center tracking-wide"
           />
         </div>
 
@@ -108,23 +114,29 @@ export default function ProfilePage() {
           </h2>
 
           <input
-            type="password"
-            placeholder="Altes Passwort"
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={4}
+            placeholder="Alte PIN"
             value={oldPassword}
             onChange={(e) =>
-              setOldPassword(e.target.value)
+              setOldPassword(e.target.value.replace(/\D/g, ""))
             }
-            className="w-full p-3 rounded-xl border bg-transparent"
+            className="w-full p-3 rounded-xl border bg-transparent text-center tracking-widest"
           />
 
           <input
-            type="password"
-            placeholder="Neues Passwort"
+            type="tel"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={4}
+            placeholder="Neue PIN"
             value={newPassword}
             onChange={(e) =>
-              setNewPassword(e.target.value)
+              setNewPassword(e.target.value.replace(/\D/g, ""))
             }
-            className="w-full p-3 rounded-xl border bg-transparent"
+            className="w-full p-3 rounded-xl border bg-transparent text-center tracking-widest"
           />
         </div>
 

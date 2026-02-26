@@ -45,7 +45,7 @@ export default async function KioskLayout({
               {user.name}
             </span>
 
-            <LogoutButton/>
+            <LogoutButton redirectTo="/kiosk"/>
           </div>
         )}
 

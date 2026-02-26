@@ -6,28 +6,36 @@ import { useRouter } from "next/navigation";
 export default function KioskAutoLogout() {
   const router = useRouter();
 
-  const INACTIVITY_TIME = 5 * 60; // 5 Minuten in Sekunden
+  const INACTIVITY_SECONDS = 5 * 60; // 5 Minuten
+  const [secondsLeft, setSecondsLeft] = useState(INACTIVITY_SECONDS);
 
-  const [secondsLeft, setSecondsLeft] = useState(INACTIVITY_TIME);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isLoggingOut = useRef(false);
 
   function resetTimer() {
-    setSecondsLeft(INACTIVITY_TIME);
+    setSecondsLeft(INACTIVITY_SECONDS);
   }
 
   async function logout() {
-    await fetch("/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
+    if (isLoggingOut.current) return;
+    isLoggingOut.current = true;
 
-    router.replace("/kiosk");
-    router.refresh();
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      router.replace("/kiosk");
+      router.refresh();
+    } catch (error) {
+      console.error("Auto logout failed:", error);
+    }
   }
 
   useEffect(() => {
-    // Countdown läuft jede Sekunde
-    timerRef.current = setInterval(() => {
+    // Countdown
+    intervalRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
           logout();
@@ -37,6 +45,7 @@ export default function KioskAutoLogout() {
       });
     }, 1000);
 
+    // Interaktionen resetten Timer
     const events = ["click", "touchstart", "keydown"];
 
     events.forEach((event) =>
@@ -44,8 +53,8 @@ export default function KioskAutoLogout() {
     );
 
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
       }
 
       events.forEach((event) =>
@@ -63,16 +72,15 @@ export default function KioskAutoLogout() {
         fixed top-4 right-4 z-[200]
         px-4 py-2 rounded-2xl
         backdrop-blur-xl
-        shadow-lg
-        border
-        text-sm font-medium
-        transition
-        "
+        shadow-lg border
+        text-sm font-semibold
+        transition-all
+      "
       style={{
         background:
           secondsLeft <= 10
-            ? "rgba(220,38,38,0.9)"
-            : "rgba(0,0,0,0.6)",
+            ? "rgba(220,38,38,0.95)"
+            : "rgba(0,0,0,0.7)",
         color: "white",
       }}
     >

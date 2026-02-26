@@ -1,8 +1,10 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import ThemeToggle from "@/components/ThemeToggle";
 import LogoutButton from "@/components/LogoutButton";
+import KioskAutoLogout from "@/components/KioskAutoLogout";
 
 export default async function DashboardLayout({
   children,
@@ -11,29 +13,33 @@ export default async function DashboardLayout({
 }) {
   const cookieStore = cookies();
   const userId = cookieStore.get("userId")?.value;
+  const mode = cookieStore.get("mode")?.value;
 
-  let user = null;
-
-  if (userId) {
-    user = await prisma.user.findUnique({
-      where: { id: Number(userId) },
-      select: {
-        id: true,
-        name: true,
-        role: true,
-        active: true,
-      },
-    });
+  if (!userId) {
+    redirect("/login");
   }
 
-  // ❌ KEIN redirect() MEHR HIER
+  const user = await prisma.user.findUnique({
+    where: { id: Number(userId) },
+    select: {
+      id: true,
+      name: true,
+      role: true,
+      active: true,
+    },
+  });
 
   if (!user || !user.active) {
-    return null; // Middleware übernimmt Redirect
+    redirect("/login");
   }
+
+  const isKiosk = mode === "kiosk";
 
   return (
     <div className="relative w-full max-w-md sm:max-w-lg md:max-w-3xl lg:max-w-5xl mx-auto min-h-screen flex flex-col bg-white dark:bg-gray-900 shadow-xl">
+
+      {/* 🔥 AutoLogout läuft jetzt überall im Dashboard */}
+      {isKiosk && <KioskAutoLogout />}
 
       <header className="sticky top-0 z-40 flex items-center justify-between px-6 py-4 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">
         <h1 className="text-sm sm:text-base font-semibold tracking-wide">
@@ -43,7 +49,7 @@ export default async function DashboardLayout({
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <LogoutButton />
+          <LogoutButton redirectTo={isKiosk ? "/kiosk" : "/login"} />
         </div>
       </header>
 

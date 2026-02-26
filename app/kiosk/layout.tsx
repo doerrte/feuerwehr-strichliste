@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "@/components/LogoutButton";
-import KioskAutoLogout from "@/components/KioskAutoLogout";
+import KioskAutoLogout from "@/components/KioskAutoLogout"
 
 export default async function KioskLayout({
   children,

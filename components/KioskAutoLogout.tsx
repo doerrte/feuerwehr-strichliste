@@ -1,32 +1,41 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function KioskAutoLogout() {
   const router = useRouter();
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const INACTIVITY_TIME = 5 * 60 * 1000; // 5 Minuten
+  const INACTIVITY_TIME = 5 * 60; // 5 Minuten in Sekunden
+
+  const [secondsLeft, setSecondsLeft] = useState(INACTIVITY_TIME);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   function resetTimer() {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-    }
+    setSecondsLeft(INACTIVITY_TIME);
+  }
 
-    timeoutRef.current = setTimeout(async () => {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+  async function logout() {
+    await fetch("/api/auth/logout", {
+      method: "POST",
+      credentials: "include",
+    });
 
-      router.replace("/kiosk");
-      router.refresh();
-    }, INACTIVITY_TIME);
+    router.replace("/kiosk");
+    router.refresh();
   }
 
   useEffect(() => {
-    resetTimer();
+    // Countdown läuft jede Sekunde
+    timerRef.current = setInterval(() => {
+      setSecondsLeft((prev) => {
+        if (prev <= 1) {
+          logout();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
     const events = ["click", "touchstart", "keydown"];
 
@@ -35,8 +44,8 @@ export default function KioskAutoLogout() {
     );
 
     return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
       }
 
       events.forEach((event) =>
@@ -45,5 +54,29 @@ export default function KioskAutoLogout() {
     };
   }, []);
 
-  return null;
+  const minutes = Math.floor(secondsLeft / 60);
+  const seconds = secondsLeft % 60;
+
+  return (
+    <div
+      className="
+        fixed top-4 right-4 z-[200]
+        px-4 py-2 rounded-2xl
+        backdrop-blur-xl
+        shadow-lg
+        border
+        text-sm font-medium
+        transition
+        "
+      style={{
+        background:
+          secondsLeft <= 10
+            ? "rgba(220,38,38,0.9)"
+            : "rgba(0,0,0,0.6)",
+        color: "white",
+      }}
+    >
+      ⏳ {minutes}:{seconds.toString().padStart(2, "0")}
+    </div>
+  );
 }

@@ -33,7 +33,7 @@ export default function EditUserModal({
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        id: user.id,
+        userId: user.id,
         name,
         phone,
         pin,

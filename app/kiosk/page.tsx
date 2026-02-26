@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
+import { UserIcon } from "@heroicons/react/24/solid";
 
 type User = {
   id: number;
@@ -13,107 +13,51 @@ export default function KioskPage() {
   const [users, setUsers] = useState<User[]>([]);
   const router = useRouter();
 
-  async function loadUsers() {
-    try {
-      const res = await fetch("/api/kiosk/users", {
-        cache: "no-store",
-      });
-
+  useEffect(() => {
+    async function loadUsers() {
+      const res = await fetch("/api/kiosk/users");
       const data = await res.json();
       setUsers(data);
-    } catch (error) {
-      console.error("KIOSK LOAD ERROR:", error);
     }
-  }
-
-  useEffect(() => {
-    // 🔥 Erstes Laden
     loadUsers();
 
-    // 🔄 Auto Refresh alle 5 Sekunden
-    const interval = setInterval(() => {
-      loadUsers();
-    }, 5000);
-
+    const interval = setInterval(loadUsers, 5000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <main className="min-h-screen bg-gray-100 dark:bg-gray-950 p-8 md:p-14">
+    <div>
 
-      {/* Header */}
-      <div className="text-center mb-12 space-y-4">
+      <h1 className="text-4xl font-bold text-center mb-12">
+        Benutzer auswählen
+      </h1>
 
-        <div className="flex justify-center">
-          <div className="w-20 h-20 rounded-2xl bg-white shadow-lg flex items-center justify-center">
-            <Image
-              src="/icons/feuerwehr.png"
-              alt="Feuerwehr"
-              width={50}
-              height={50}
-              priority
-            />
-          </div>
-        </div>
-
-        <h1 className="text-3xl md:text-4xl font-bold">
-          Benutzer auswählen
-        </h1>
-
-        <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
-          Aktualisiert automatisch alle 5 Sekunden
-        </p>
-      </div>
-
-      {/* User Grid */}
-      <div className="
-        grid
-        grid-cols-2
-        md:grid-cols-3
-        lg:grid-cols-4
-        xl:grid-cols-5
-        gap-6 md:gap-8
-      ">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
         {users.map((user) => (
           <button
             key={user.id}
             onClick={() => router.push(`/kiosk/login/${user.id}`)}
             className="
-              group
-              bg-white dark:bg-gray-900
+              bg-feuerwehr-gray
+              border-2 border-feuerwehr-red/30
               rounded-3xl
               p-8
-              shadow-lg
-              border border-gray-200 dark:border-gray-800
+              shadow-xl
               text-xl font-semibold
+              hover:bg-feuerwehr-red
+              hover:text-white
               hover:scale-105
-              hover:shadow-2xl
-              transition-all duration-300
+              transition
             "
           >
             <div className="flex flex-col items-center gap-4">
-
-              <div className="
-                w-16 h-16
-                rounded-full
-                bg-red-600
-                text-white
-                flex items-center justify-center
-                text-2xl
-                shadow-md
-              ">
-                {user.name.charAt(0).toUpperCase()}
-              </div>
-
-              <span className="text-center">
-                {user.name}
-              </span>
-
+              <UserIcon className="w-10 h-10" />
+              {user.name}
             </div>
           </button>
         ))}
       </div>
 
-    </main>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "@/components/LogoutButton";
-import KioskAutoLogout from "@/components/KioskAutoLogout"
 
 export default async function KioskLayout({
   children,
@@ -24,41 +23,40 @@ export default async function KioskLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col">
-      {user && <KioskAutoLogout />}
+    <div className="min-h-screen bg-feuerwehr-dark text-white flex flex-col">
 
-      {/* Header */}
-      <header className="bg-feuerwehr-red text-white px-10 py-6 flex items-center justify-between shadow-xl">
+      {/* Feuerwehr Header */}
+      <header className="bg-feuerwehr-red px-10 py-6 flex items-center justify-between shadow-xl">
 
-          <div className="flex items-center gap-4">
-            <img
-              src="/icons/feuerwehr.png"
-              alt="Feuerwehr"
-              className="w-12 h-12"
-            />
+        <div className="flex items-center gap-4">
+          <img
+            src="/icons/feuerwehr.png"
+            alt="Feuerwehr"
+            className="w-12 h-12"
+          />
 
-            <div>
-              <h1 className="text-2xl font-bold tracking-wide">
-                Feuerwehr Bedburg
-              </h1>
-              <p className="text-sm opacity-90">
-                Einheit 5 – Strichliste
-              </p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-wide">
+              Feuerwehr Bedburg
+            </h1>
+            <p className="text-sm opacity-90">
+              Einheit 5 – Strichliste
+            </p>
           </div>
+        </div>
 
-          {user && (
-            <div className="flex items-center gap-4">
-              <span className="text-lg font-semibold">
-                {user.name}
-              </span>
+        {user && (
+          <div className="flex items-center gap-6">
+            <span className="text-lg font-semibold">
+              {user.name}
+            </span>
 
-              <LogoutButton redirectTo="/kiosk" />
-            </div>
-          )}
+            <LogoutButton redirectTo="/kiosk" />
+          </div>
+        )}
+
       </header>
 
-      {/* Content */}
       <main className="flex-1 p-10">
         {children}
       </main>

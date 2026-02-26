@@ -1,27 +1,33 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    const cookieStore = cookies();
-
-    // 🔎 Prüfen ob Kiosk-Mode aktiv war
-    const mode = cookieStore.get("mode")?.value;
-
-    // 🧹 Cookies löschen
-    cookieStore.delete("userId");
-    cookieStore.delete("mode");
-
-    // 🎯 Redirect-Ziel bestimmen
-    const redirectTo = mode === "kiosk" ? "/kiosk" : "/login";
-
-    return NextResponse.json({
+    const response = NextResponse.json({
       success: true,
-      redirect: redirectTo,
     });
+
+    // 🔥 User Session löschen
+    response.cookies.set("userId", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+
+    // 🔥 Kiosk Modus löschen
+    response.cookies.set("mode", "", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 0,
+    });
+
+    return response;
 
   } catch (error) {
     console.error("LOGOUT ERROR:", error);

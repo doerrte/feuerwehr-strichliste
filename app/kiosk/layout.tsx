@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import LogoutButton from "@/components/LogoutButton";
+import KioskAutoLogout from "@/components/KioskAutoLogout";
 
 export default async function KioskLayout({
   children,
@@ -24,6 +25,7 @@ export default async function KioskLayout({
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 flex flex-col">
+      {user && <KioskAutoLogout />}
 
       {/* Header */}
       <header className="flex items-center justify-between px-8 py-6 border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl">

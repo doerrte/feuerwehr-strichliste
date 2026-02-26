@@ -2,65 +2,55 @@
 
 import { useState } from "react";
 
-type Props = {
-  onClose: () => void;
-  onSuccess: () => void;
-};
-
-export default function AddUserModal({
+export default function CreateUserModal({
   onClose,
-  onSuccess,
-}: Props) {
+  onCreated,
+}: {
+  onClose: () => void;
+  onCreated: () => void;
+}) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [pin, setPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
   const [role, setRole] = useState<"USER" | "ADMIN">("USER");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   async function handleCreate() {
     setError("");
 
-    if (!/^\d{4}$/.test(pin)) {
-      setError("PIN muss genau 4 Zahlen enthalten");
+    if (!name || !phone || !pin) {
+      setError("Alle Felder ausfüllen");
       return;
     }
 
-    if (pin !== confirmPin) {
-      setError("PIN stimmt nicht überein");
-      return;
-    }
+    setLoading(true);
 
     const res = await fetch("/api/admin/users/add", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        name,
-        phone,
-        pin,
-        role,
-      }),
+      body: JSON.stringify({ name, phone, pin, role }),
     });
 
     const data = await res.json();
 
     if (!res.ok) {
-      setError(data.error);
+      setError(data.error || "Fehler");
+      setLoading(false);
       return;
     }
 
-    onSuccess();
-    onClose();
+    onCreated();
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
 
-      <div className="bg-white dark:bg-gray-900 rounded-3xl p-8 w-full max-w-md shadow-2xl space-y-6">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-5">
 
-        <h2 className="text-xl font-semibold text-center">
+        <h2 className="text-xl font-semibold">
           Benutzer erstellen
         </h2>
 
@@ -68,64 +58,68 @@ export default function AddUserModal({
           placeholder="Name"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+          className="w-full border p-3 rounded-xl"
         />
 
         <input
           placeholder="Telefonnummer"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
+          className="w-full border p-3 rounded-xl"
         />
 
         <input
-          placeholder="4-stellige PIN"
-          maxLength={4}
+          type="password"
+          placeholder="PIN"
           value={pin}
-          onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-          className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-center tracking-widest"
+          onChange={(e) => setPin(e.target.value)}
+          className="w-full border p-3 rounded-xl"
         />
 
-        <input
-          placeholder="PIN bestätigen"
-          maxLength={4}
-          value={confirmPin}
-          onChange={(e) =>
-            setConfirmPin(e.target.value.replace(/\D/g, ""))
-          }
-          className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-center tracking-widest"
-        />
+        <div className="flex gap-3">
+          <button
+            onClick={() => setRole("USER")}
+            className={`flex-1 py-2 rounded-xl ${
+              role === "USER"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700"
+            }`}
+          >
+            USER
+          </button>
 
-        <select
-          value={role}
-          onChange={(e) =>
-            setRole(e.target.value as "USER" | "ADMIN")
-          }
-          className="w-full p-3 rounded-xl bg-gray-100 dark:bg-gray-800"
-        >
-          <option value="USER">User</option>
-          <option value="ADMIN">Admin</option>
-        </select>
+          <button
+            onClick={() => setRole("ADMIN")}
+            className={`flex-1 py-2 rounded-xl ${
+              role === "ADMIN"
+                ? "bg-red-600 text-white"
+                : "bg-gray-200 dark:bg-gray-700"
+            }`}
+          >
+            ADMIN
+          </button>
+        </div>
 
         {error && (
-          <div className="text-red-600 text-sm text-center">
+          <div className="text-red-600 text-sm">
             {error}
           </div>
         )}
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 pt-2">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-xl bg-gray-200 dark:bg-gray-700"
+            className="flex-1 py-2 rounded-xl bg-gray-200 dark:bg-gray-700"
           >
             Abbrechen
           </button>
 
           <button
             onClick={handleCreate}
-            className="flex-1 py-3 rounded-xl bg-red-600 text-white"
+            disabled={loading}
+            className="flex-1 py-2 rounded-xl bg-green-600 text-white"
           >
-            Erstellen
+            {loading ? "Erstelle..." : "Erstellen"}
           </button>
         </div>
 

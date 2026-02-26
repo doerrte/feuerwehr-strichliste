@@ -9,32 +9,18 @@ export async function POST(req: Request) {
   try {
     const { phone, pin } = await req.json();
 
-if (!phone || !pin) {
-  return NextResponse.json(
-    { error: "Fehlende Daten" },
-    { status: 400 }
-  );
-}
+    if (!phone || !pin) {
+      return NextResponse.json(
+        { error: "Fehlende Daten" },
+        { status: 400 }
+      );
+    }
 
-    // 🔥 Telefonnummer bereinigen
-     const { phone, pin } = await req.json();
-
-      if (!phone || !pin) {
-        return NextResponse.json(
-          { error: "Fehlende Daten" },
-          { status: 400 }
-        );
-      }
-
-      // 🔥 Telefonnummer bereinigen
-      const cleanedPhone = phone.replace(/\D/g, "");
-
-      const user = await prisma.user.findUnique({
-        where: { phone: cleanedPhone },
-      });
+    // 🔥 Telefonnummer bereinigen (entfernt Leerzeichen & Sonderzeichen)
+    const cleanedPhone = phone.replace(/\D/g, "");
 
     const user = await prisma.user.findUnique({
-      where: { phone },
+      where: { phone: cleanedPhone },
     });
 
     if (!user || !user.active) {
@@ -69,6 +55,7 @@ if (!phone || !pin) {
 
   } catch (error) {
     console.error("LOGIN ERROR:", error);
+
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

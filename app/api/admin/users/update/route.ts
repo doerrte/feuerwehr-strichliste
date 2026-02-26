@@ -8,8 +8,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const cookieStore = cookies();
-    const adminId = cookieStore.get("userId")?.value;
+    const adminId = cookies().get("userId")?.value;
 
     if (!adminId) {
       return NextResponse.json(
@@ -18,7 +17,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔐 Admin prüfen
     const admin = await prisma.user.findUnique({
       where: { id: Number(adminId) },
     });
@@ -30,14 +28,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const {
-      userId,
-      name,
-      phone,
-      pin,
-      role,
-      active,
-    } = await req.json();
+    const { userId, name, phone, pin, role, active } = await req.json();
 
     if (!userId) {
       return NextResponse.json(
@@ -46,57 +37,31 @@ export async function POST(req: Request) {
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: Number(userId) },
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 404 }
-      );
-    }
-
     const updateData: any = {};
 
-    // 📝 Name optional
     if (name) {
       updateData.name = name.trim();
     }
 
-    // 📱 Telefonnummer nur Zahlen
     if (phone) {
-      const cleanedPhone = phone.replace(/\D/g, "");
-
-      if (!/^\d+$/.test(cleanedPhone)) {
-        return NextResponse.json(
-          { error: "Telefonnummer darf nur Zahlen enthalten" },
-          { status: 400 }
-        );
-      }
-
-      updateData.phone = cleanedPhone;
+      updateData.phone = phone.replace(/\D/g, "");
     }
 
-    // 🔢 PIN nur wenn gesetzt
     if (pin) {
       if (!/^\d{4}$/.test(pin)) {
         return NextResponse.json(
-          { error: "PIN muss genau 4 Zahlen enthalten" },
+          { error: "PIN muss 4 Zahlen enthalten" },
           { status: 400 }
         );
       }
 
-      const passwordHash = await hashPin(pin);
-      updateData.passwordHash = passwordHash;
+      updateData.passwordHash = await hashPin(pin);
     }
 
-    // 👤 Rolle ändern
-    if (role && (role === "USER" || role === "ADMIN")) {
+    if (role === "USER" || role === "ADMIN") {
       updateData.role = role;
     }
 
-    // 🚫 Aktiv / Deaktivieren
     if (typeof active === "boolean") {
       updateData.active = active;
     }

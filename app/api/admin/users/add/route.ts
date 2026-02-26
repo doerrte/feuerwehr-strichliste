@@ -5,22 +5,22 @@ import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    const userId = cookies().get("userId")?.value;
+    const adminId = cookies().get("userId")?.value;
 
-    if (!userId) {
+    if (!adminId) {
       return NextResponse.json(
         { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
 
-    const currentUser = await prisma.user.findUnique({
-      where: { id: Number(userId) },
+    const admin = await prisma.user.findUnique({
+      where: { id: Number(adminId) },
     });
 
-    if (!currentUser || currentUser.role !== "ADMIN") {
+    if (!admin || admin.role !== "ADMIN") {
       return NextResponse.json(
-        { error: "Forbidden" },
+        { error: "Keine Berechtigung" },
         { status: 403 }
       );
     }
@@ -34,9 +34,11 @@ export async function POST(req: Request) {
       );
     }
 
+    const cleanedPhone = phone.replace(/\D/g, "");
+
     if (!/^\d{4}$/.test(pin)) {
       return NextResponse.json(
-        { error: "PIN muss 4-stellig sein" },
+        { error: "PIN muss 4 Zahlen enthalten" },
         { status: 400 }
       );
     }
@@ -46,17 +48,18 @@ export async function POST(req: Request) {
     await prisma.user.create({
       data: {
         name: name.trim(),
-        phone: phone.trim(),
+        phone: cleanedPhone,
         passwordHash,
         role: role === "ADMIN" ? "ADMIN" : "USER",
         active: true,
       },
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ success: true });
 
   } catch (error) {
     console.error("CREATE USER ERROR:", error);
+
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

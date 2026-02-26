@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
-    const { phone, password } = await req.json();
+    const { phone, pin } = await req.json();
 
-    if (!phone || !password) {
+    if (!phone || !pin) {
       return NextResponse.json(
         { error: "Fehlende Daten" },
         { status: 400 }
@@ -17,32 +20,30 @@ export async function POST(req: Request) {
       where: { phone },
     });
 
-    if (!user) {
+    if (!user || !user.active) {
       return NextResponse.json(
         { error: "Benutzer nicht gefunden" },
-        { status: 404 }
+        { status: 401 }
       );
     }
 
-    const valid = await bcrypt.compare(
-      password,
-      user.passwordHash
-    );
+    const valid = await bcrypt.compare(pin, user.passwordHash);
 
     if (!valid) {
       return NextResponse.json(
-        { error: "Falsches Passwort" },
+        { error: "Falsche PIN" },
         { status: 401 }
       );
     }
 
     const response = NextResponse.json({
       success: true,
+      redirect: "/dashboard",
     });
 
     response.cookies.set("userId", String(user.id), {
       httpOnly: true,
-      secure: true,          // 🔥 WICHTIG für PWA
+      secure: true,
       sameSite: "lax",
       path: "/",
     });
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
     return response;
 
   } catch (error) {
-    console.error(error);
+    console.error("LOGIN ERROR:", error);
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

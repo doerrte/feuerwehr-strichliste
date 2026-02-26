@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "Strichliste",
   manifest: "/manifest.json",
   icons: {
-    apple: "/icons/feuerwehr.png",
+    icon: "/icons/feuerwehr.png",
   },
 };
 

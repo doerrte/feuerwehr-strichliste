@@ -7,16 +7,33 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const { userId, pin } = await req.json();
+    const body = await req.json();
+
+    const userId = Number(body.userId);
+    const pin = String(body.password || "");
+
+    if (!userId || !pin) {
+      return NextResponse.json(
+        { error: "Ungültige Daten" },
+        { status: 400 }
+      );
+    }
 
     const user = await prisma.user.findUnique({
-      where: { id: Number(userId) },
+      where: { id: userId },
     });
 
     if (!user || !user.active) {
       return NextResponse.json(
-        { error: "Ungültiger Benutzer" },
+        { error: "Benutzer ungültig" },
         { status: 401 }
+      );
+    }
+
+    if (!user.passwordHash) {
+      return NextResponse.json(
+        { error: "Kein Passwort gesetzt" },
+        { status: 500 }
       );
     }
 
@@ -24,7 +41,7 @@ export async function POST(req: Request) {
 
     if (!valid) {
       return NextResponse.json(
-        { error: "Falsche PIN" },
+        { error: "Falscher PIN" },
         { status: 401 }
       );
     }
@@ -33,22 +50,21 @@ export async function POST(req: Request) {
 
     response.cookies.set("userId", String(user.id), {
       httpOnly: true,
-      secure: true,
-      sameSite: "lax",
       path: "/",
+      sameSite: "lax",
     });
 
     response.cookies.set("mode", "kiosk", {
       httpOnly: true,
-      secure: true,
-      sameSite: "lax",
       path: "/",
+      sameSite: "lax",
     });
 
     return response;
 
   } catch (error) {
     console.error("KIOSK LOGIN ERROR:", error);
+
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

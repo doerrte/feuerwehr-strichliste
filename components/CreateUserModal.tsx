@@ -62,18 +62,45 @@ export default function CreateUserModal({
         />
 
         <input
-          placeholder="Telefonnummer"
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="tel"
+          maxLength={15}
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          className="w-full border p-3 rounded-xl"
+          onChange={(e) => {
+            const cleaned = e.target.value.replace(/\D/g, "");
+
+            const formatted = cleaned.replace(
+              /^(\d{4})(\d)/,
+              "$1 $2"
+            );
+
+            setPhone(formatted);
+          }}
+          placeholder="Telefonnummer"
+          className="
+            w-full p-3 rounded-xl
+            bg-gray-100 dark:bg-gray-800
+            text-center tracking-wide
+          "
         />
 
-        <input
-          type="password"
-          placeholder="PIN"
+       <input
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          maxLength={4}
           value={pin}
-          onChange={(e) => setPin(e.target.value)}
-          className="w-full border p-3 rounded-xl"
+          onChange={(e) =>
+            setPin(e.target.value.replace(/\D/g, ""))
+          }
+          placeholder="4-stellige PIN"
+          className="
+            w-full p-3 rounded-xl
+            bg-gray-100 dark:bg-gray-800
+            text-center tracking-widest
+          "
         />
 
         <div className="flex gap-3">

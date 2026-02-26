@@ -5,8 +5,7 @@ import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    const cookieStore = cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const userId = cookies().get("userId")?.value;
 
     if (!userId) {
       return NextResponse.json(
@@ -15,7 +14,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 🔐 Admin prüfen
     const currentUser = await prisma.user.findUnique({
       where: { id: Number(userId) },
     });
@@ -27,7 +25,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { name, phone, pin } = await req.json();
+    const { name, phone, pin, role } = await req.json();
 
     if (!name || !phone || !pin) {
       return NextResponse.json(
@@ -36,17 +34,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const trimmedPhone = phone.trim();
-    const trimmedName = name.trim();
-
-    // 📱 Telefonnummer darf nicht doppelt sein
-    const existing = await prisma.user.findUnique({
-      where: { phone: trimmedPhone },
-    });
-
-    if (existing) {
+    if (!/^\d{4}$/.test(pin)) {
       return NextResponse.json(
-        { error: "Telefonnummer bereits vergeben" },
+        { error: "PIN muss 4-stellig sein" },
         { status: 400 }
       );
     }
@@ -55,12 +45,11 @@ export async function POST(req: Request) {
 
     await prisma.user.create({
       data: {
-        name: trimmedName,
-        phone: trimmedPhone,
+        name: name.trim(),
+        phone: phone.trim(),
         passwordHash,
-        role: "USER",
+        role: role === "ADMIN" ? "ADMIN" : "USER",
         active: true,
-        hasSeenIntro: false,
       },
     });
 

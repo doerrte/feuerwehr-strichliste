@@ -87,15 +87,26 @@ export default function LoginPage() {
 
         {/* Telefonnummer */}
         <input
-          type="number"
+          type="tel"
+          inputMode="numeric"
+          pattern="[0-9]*"
+          autoComplete="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => {
+            const cleaned = e.target.value.replace(/\D/g, "");
+
+            const formatted = cleaned
+              .replace(/^(\d{4})(\d)/, "$1 $2");
+              
+            setPhone(formatted);
+          }}
           placeholder="Telefonnummer"
           className="
             w-full px-4 py-3 rounded-2xl
             bg-white/10 border border-white/20
             text-white placeholder-white/40
             focus:outline-none focus:ring-2 focus:ring-red-500
+            text-center tracking-wide
           "
         />
 

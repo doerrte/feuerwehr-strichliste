@@ -2,8 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-html,
+/* Feuerwehr optional globale Styles */
+
 body {
-  margin: 0;
-  padding: 0;
+  @apply bg-gray-100 dark:bg-gray-950;
+}
+
+/* Scrollbar schöner */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c8102e;
+  border-radius: 9999px;
 }

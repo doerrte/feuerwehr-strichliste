@@ -8,16 +8,14 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx}",
   ],
 
-        theme: {
-        extend: {
-          colors: {
-            feuerwehr: {
-              red: "#C8102E",
-              dark: "#111111",
-              gray: "#1F1F1F",
-              light: "#F4F4F4",
-            },
-          },
+  theme: {
+    extend: {
+      colors: {
+        feuerwehr: {
+          red: "#C8102E",
+          dark: "#111111",
+          gray: "#1F1F1F",
+          light: "#F4F4F4",
         },
       },
 

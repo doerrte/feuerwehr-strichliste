@@ -4,6 +4,39 @@ import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
+//
+// 🔥 GET → Alle Getränke für Lagerseite
+//
+export async function GET() {
+  try {
+    const userIdRaw = cookies().get("userId")?.value;
+
+    if (!userIdRaw) {
+      return NextResponse.json(
+        { error: "Nicht eingeloggt" },
+        { status: 401 }
+      );
+    }
+
+    const drinks = await prisma.drink.findMany({
+      orderBy: { name: "asc" },
+    });
+
+    return NextResponse.json(drinks);
+
+  } catch (error) {
+    console.error("GET DRINKS ERROR:", error);
+
+    return NextResponse.json(
+      { error: "Serverfehler" },
+      { status: 500 }
+    );
+  }
+}
+
+//
+// 🔥 POST → Neues Getränk erstellen
+//
 export async function POST(req: Request) {
   try {
     const userIdRaw = cookies().get("userId")?.value;

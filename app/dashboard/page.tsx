@@ -178,12 +178,14 @@ export default function DashboardPage() {
                     {drink.name}
                   </h3>
                   
-                  <p className="text-sm text-gray-500 mt-1">
-                    Deine Striche: 
-                    <span className="font-semibold text-red-600">
-                      {drink.amount}
-                    </span>
-                  </p>
+                  <div className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-500 mt-1">
+                      Deine Striche: 
+                      <span className="font-semibold text-red-600">
+                        {drink.amount}
+                      </span>
+                    </p>
+                  </div>
 
                   <div className="text-sm text-gray-500">
                     🧃 {cases} Kisten · 🍾 {bottles} Flaschen

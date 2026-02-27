@@ -2,88 +2,72 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(req: Request) {
+export async function POST() {
   try {
-    const cookieStore = cookies();
-    const userIdRaw = cookieStore.get("userId")?.value;
+    const sessionUserId = Number(cookies().get("userId")?.value);
 
-    if (!userIdRaw) {
+    if (!sessionUserId) {
       return NextResponse.json(
         { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
 
-    const userId = Number(userIdRaw);
-
-    const { drinkId, amount } = await req.json();
-
-    const drink = await prisma.drink.findUnique({
-      where: { id: drinkId },
+    // 🔥 Letzten Log dieses eingeloggten Users finden
+    const lastLog = await prisma.countLog.findFirst({
+      where: {
+        OR: [
+          { userId: sessionUserId },
+          { adminId: sessionUserId },
+        ],
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
     });
 
-    if (!drink) {
+    if (!lastLog) {
       return NextResponse.json(
-        { error: "Getränk nicht gefunden" },
-        { status: 404 }
-      );
-    }
-
-    const bookingAmount = Number(amount);
-
-    if (!bookingAmount || bookingAmount <= 0) {
-      return NextResponse.json(
-        { error: "Ungültige Menge" },
+        { error: "Keine Buchung gefunden" },
         { status: 400 }
       );
     }
 
-    if (drink.stock < bookingAmount) {
-      return NextResponse.json(
-        { error: "Nicht genügend Bestand" },
-        { status: 400 }
-      );
-    }
+    // 🔥 WICHTIG: betroffener User aus Log
+    const affectedUserId = lastLog.userId;
 
-    await prisma.$transaction([
+    // 🔥 Count sauber updaten
+    await prisma.count.update({
+      where: {
+        userId_drinkId: {
+          userId: affectedUserId,
+          drinkId: lastLog.drinkId,
+        },
+      },
+      data: {
+        amount: lastLog.oldAmount,
+      },
+    });
 
-      prisma.count.upsert({
-        where: {
-          userId_drinkId: {
-            userId,
-            drinkId,
-          },
-        },
-        update: {
-          amount: {
-            increment: bookingAmount,
-          },
-        },
-        create: {
-          userId,
-          drinkId,
-          amount: bookingAmount,
-        },
-      }),
-
-      prisma.drink.update({
-        where: { id: drinkId },
-        data: {
-          stock: {
-            decrement: bookingAmount,
-          },
-        },
-      }),
-
-    ]);
+    // 🔥 Undo Log erstellen
+    await prisma.countLog.create({
+      data: {
+        adminId: sessionUserId,
+        userId: affectedUserId,
+        drinkId: lastLog.drinkId,
+        oldAmount: lastLog.newAmount,
+        newAmount: lastLog.oldAmount,
+        type: "SYSTEM",
+      },
+    });
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error("SCAN ERROR:", error);
+    console.error("UNDO ERROR:", error);
+
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

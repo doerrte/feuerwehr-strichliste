@@ -24,34 +24,6 @@ export default function AddDrinkModal({
     return value.replace(/\D/g, "");
   }
 
-  function getImageForDrink(name: string) {
-    const lower = name.toLowerCase();
-
-    if (lower.includes("wasser")) return "/drinks/gerolsteiner.png";
-    if (lower.includes("gerolsteiner")) return "/drinks/gerolsteiner.png";
-    if (lower.includes("cola")) return "/drinks/cola.png";
-    if (lower.includes("coca-cola")) return "/drinks/cola.png";
-    if (lower.includes("coca cola")) return "/drinks/cola.png";
-    if (lower.includes("bier")) return "/drinks/reissdorf.png";
-    if (lower.includes("reissdorf")) return "/drinks/reissdorf.png";
-    if (lower.includes("sprite")) return "/drinks/sprite.png";
-    if (lower.includes("cola-light")) return "/drinks/cola-light.png";
-    if (lower.includes("coca-cola-light")) return "/drinks/cola-light.png";
-    if (lower.includes("coca cola-light")) return "/drinks/cola-light.png";
-    if (lower.includes("coca cola light")) return "/drinks/cola-light.png";
-    if (lower.includes("cola light")) return "/drinks/cola-light.png";
-    if (lower.includes("cola zero")) return "/drinks/cola-zero.png";
-    if (lower.includes("cola-zero")) return "/drinks/cola-zero.png";
-    if (lower.includes("coca-cola zero")) return "/drinks/cola-zero.png";
-    if (lower.includes("coca-cola-zero")) return "/drinks/cola-zero.png";
-    if (lower.includes("coca cola zero")) return "/drinks/cola-zero.png";
-    if (lower.includes("fanta")) return "/drinks/fanta.png";
-    if (lower.includes("limo")) return "/drinks/fanta.png";
-    if (lower.includes("limo weiß")) return "/drinks/sprite.png";
-
-    return "/drinks/default.png";
-  }
-
   async function handleCreate() {
     setError("");
 
@@ -60,7 +32,7 @@ export default function AddDrinkModal({
     const parsedBottles = Number(bottles) || 0;
     const parsedMinStock = Number(minStock) || 0;
 
-    if (!name || !parsedUnitsPerCase) {
+    if (!name.trim() || !parsedUnitsPerCase) {
       setError("Bitte alle Pflichtfelder ausfüllen");
       return;
     }
@@ -70,48 +42,44 @@ export default function AddDrinkModal({
 
     setLoading(true);
 
-    const res = await fetch("/api/drinks", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name,
-        stock,
-        unitsPerCase,
-        minStock,
-      }),
-    });
+    try {
+      const res = await fetch("/api/drinks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name.trim(),
+          stock: totalStock,
+          unitsPerCase: parsedUnitsPerCase,
+          minStock: parsedMinStock,
+        }),
+      });
 
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => null);
-      alert(errorData?.error || "Fehler beim Erstellen");
-      return;
-    }
+      const data = await res.json().catch(() => null);
 
-    onClose();
-    window.location.reload();
+      if (!res.ok) {
+        setError(data?.error || "Fehler beim Erstellen");
+        setLoading(false);
+        return;
+      }
 
-    const data = await res.json();
-
-    if (!res.ok) {
-      setError(data.error || "Fehler beim Erstellen");
       setLoading(false);
-      return;
-    }
+      onCreated();
+      onClose();
 
-    setLoading(false);
-    onCreated();
-    onClose();
+    } catch (err) {
+      setError("Serverfehler");
+      setLoading(false);
+    }
   }
 
   return createPortal(
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm p-6">
-      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-6 space-y-6 animate-fadeIn">
+      <div className="w-full max-w-md bg-white dark:bg-gray-900 rounded-3xl shadow-2xl p-6 space-y-6">
 
         <h2 className="text-xl font-semibold text-center">
           Neues Getränk anlegen
         </h2>
 
-        {/* Getränkename */}
         <div>
           <label className="text-sm font-medium">
             Getränkename
@@ -125,7 +93,6 @@ export default function AddDrinkModal({
           />
         </div>
 
-        {/* Kisten */}
         <div>
           <label className="text-sm font-medium">
             Anzahl Kisten
@@ -133,7 +100,6 @@ export default function AddDrinkModal({
           <input
             type="text"
             inputMode="numeric"
-            placeholder="z.B. 5"
             value={cases}
             onChange={(e) =>
               setCases(onlyNumbers(e.target.value))
@@ -142,7 +108,6 @@ export default function AddDrinkModal({
           />
         </div>
 
-        {/* Einheiten pro Kiste */}
         <div>
           <label className="text-sm font-medium">
             Flaschen pro Kiste *
@@ -150,7 +115,6 @@ export default function AddDrinkModal({
           <input
             type="text"
             inputMode="numeric"
-            placeholder="z.B. 12"
             value={unitsPerCase}
             onChange={(e) =>
               setUnitsPerCase(onlyNumbers(e.target.value))
@@ -159,7 +123,6 @@ export default function AddDrinkModal({
           />
         </div>
 
-        {/* Einzel-Flaschen */}
         <div>
           <label className="text-sm font-medium">
             Einzelne Flaschen
@@ -167,7 +130,6 @@ export default function AddDrinkModal({
           <input
             type="text"
             inputMode="numeric"
-            placeholder="z.B. 3"
             value={bottles}
             onChange={(e) =>
               setBottles(onlyNumbers(e.target.value))
@@ -176,7 +138,6 @@ export default function AddDrinkModal({
           />
         </div>
 
-        {/* Mindestbestand */}
         <div>
           <label className="text-sm font-medium">
             Mindestbestand
@@ -184,7 +145,6 @@ export default function AddDrinkModal({
           <input
             type="text"
             inputMode="numeric"
-            placeholder="z.B. 10"
             value={minStock}
             onChange={(e) =>
               setMinStock(onlyNumbers(e.target.value))
@@ -210,7 +170,7 @@ export default function AddDrinkModal({
           <button
             onClick={handleCreate}
             disabled={loading}
-            className="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
+            className="flex-1 py-3 rounded-xl bg-red-600 text-white font-medium"
           >
             {loading ? "Speichert..." : "Erstellen"}
           </button>

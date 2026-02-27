@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { LogType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const sessionUserId = Number(cookies().get("userId")?.value);
 
@@ -15,58 +16,90 @@ export async function POST() {
       );
     }
 
-    // 🔥 Letzten Log dieses eingeloggten Users finden
-    const lastLog = await prisma.countLog.findFirst({
-      where: {
-        OR: [
-          { userId: sessionUserId },
-          { adminId: sessionUserId },
-        ],
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    const body = await req.json();
 
-    if (!lastLog) {
+    const parsedDrinkId = Number(body.drinkId);
+    const parsedAmount = Number(body.amount);
+
+    if (
+      !parsedDrinkId ||
+      isNaN(parsedAmount) ||
+      parsedAmount <= 0
+    ) {
       return NextResponse.json(
-        { error: "Keine Buchung gefunden" },
+        { error: "Ungültige Daten" },
         { status: 400 }
       );
     }
 
-    // 🔥 WICHTIG: betroffener User aus Log
-    const affectedUserId = lastLog.userId;
-
-    // 🔥 Count sauber updaten
-    await prisma.count.update({
-      where: {
-        userId_drinkId: {
-          userId: affectedUserId,
-          drinkId: lastLog.drinkId,
-        },
-      },
-      data: {
-        amount: lastLog.oldAmount,
-      },
+    // 🔥 User prüfen
+    const user = await prisma.user.findUnique({
+      where: { id: sessionUserId },
+      select: { id: true, active: true },
     });
 
-    // 🔥 Undo Log erstellen
-    await prisma.countLog.create({
-      data: {
-        adminId: sessionUserId,
-        userId: affectedUserId,
-        drinkId: lastLog.drinkId,
-        oldAmount: lastLog.newAmount,
-        newAmount: lastLog.oldAmount,
-        type: "SYSTEM",
-      },
+    if (!user || !user.active) {
+      return NextResponse.json(
+        { error: "User nicht aktiv" },
+        { status: 403 }
+      );
+    }
+
+    // 🔥 Transaktion (atomic)
+    await prisma.$transaction(async (tx) => {
+
+      const existingCount = await tx.count.findUnique({
+        where: {
+          userId_drinkId: {
+            userId: sessionUserId,
+            drinkId: parsedDrinkId,
+          },
+        },
+      });
+
+      const oldAmount = existingCount?.amount ?? 0;
+      const newAmount = oldAmount + parsedAmount;
+
+      if (!existingCount) {
+        await tx.count.create({
+          data: {
+            userId: sessionUserId,
+            drinkId: parsedDrinkId,
+            amount: newAmount,
+          },
+        });
+      } else {
+        await tx.count.update({
+          where: {
+            userId_drinkId: {
+              userId: sessionUserId,
+              drinkId: parsedDrinkId,
+            },
+          },
+          data: {
+            amount: newAmount,
+          },
+        });
+      }
+
+      // 🔥 Log speichern
+      await tx.countLog.create({
+        data: {
+          adminId: sessionUserId,
+          userId: sessionUserId,
+          drinkId: parsedDrinkId,
+          oldAmount,
+          newAmount,
+          type: LogType.MANUAL,
+        },
+      });
+
     });
 
     return NextResponse.json({ success: true });
 
   } catch (error) {
-    console.error("UNDO ERROR:", error);
+    console.error("SCAN ERROR:", error);
 
     return NextResponse.json(
       { error: "Serverfehler" },

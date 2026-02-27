@@ -5,53 +5,45 @@ import { useEffect, useState } from "react";
 type Drink = {
   id: number;
   name: string;
+  amount: number;
   stock: number;
   unitsPerCase: number;
   minStock: number;
-  myAmount: number;
+  image?: string;
 };
 
 type Me = {
   id: number;
   name: string;
+  role: "USER" | "ADMIN";
 };
 
 export default function DashboardPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [me, setMe] = useState<Me | null>(null);
   const [inputs, setInputs] = useState<Record<number, string>>({});
   const [confirmDrink, setConfirmDrink] = useState<Drink | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
 
   useEffect(() => {
     load();
+    loadMe();
   }, []);
 
   async function load() {
-  try {
-    const [drinksRes, meRes] = await Promise.all([
-      fetch("/api/drinks/me", {
-        credentials: "include",
-        cache: "no-store",
-      }),
-      fetch("/api/auth/me", {
-        credentials: "include",
-        cache: "no-store",
-      }),
-    ]);
-
-    if (drinksRes.ok) {
-      const drinksData = await drinksRes.json();
-      setDrinks(drinksData);
-    }
-
-    if (meRes.ok) {
-      const meData = await meRes.json();
-      setMe(meData.user); // 🔥 HIER
-    }
-  } catch (err) {
-    console.error("LOAD ERROR:", err);
+    const res = await fetch("/api/drinks/me", {
+      credentials: "include",
+    });
+    const data = await res.json();
+    setDrinks(data);
   }
-}
+
+  async function loadMe() {
+    const res = await fetch("/api/auth/me", {
+      credentials: "include",
+    });
+    const data = await res.json();
+    setMe(data.user);
+  }
 
   function changeValue(id: number, delta: number) {
     setInputs((prev) => {
@@ -71,7 +63,7 @@ export default function DashboardPage() {
 
     const amount = Number(inputs[confirmDrink.id]);
 
-    await fetch("/api/scan", {
+    const res = await fetch("/api/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -80,15 +72,17 @@ export default function DashboardPage() {
       }),
     });
 
+    if (!res.ok) {
+      alert("Fehler beim Buchen");
+      return;
+    }
+
     setInputs((prev) => ({ ...prev, [confirmDrink.id]: "" }));
     setConfirmDrink(null);
     load();
   }
 
-    async function undoLastBooking() {
-      console.log("UNDO CLICKED")
-    if (!confirm("Letzte Buchung wirklich rückgängig machen?")) return;
-
+  async function undoLastBooking() {
     const res = await fetch("/api/scan/undo", {
       method: "POST",
     });
@@ -96,45 +90,43 @@ export default function DashboardPage() {
     const data = await res.json();
 
     if (!res.ok) {
-      alert(data.error);
+      alert(data.error || "Keine Buchung gefunden");
       return;
     }
 
-
-    load(); // Getränke neu laden
+    load();
   }
 
   const totalStriche = drinks.reduce(
-    (sum, d) => sum + (d.myAmount || 0),
+    (sum, d) => sum + d.amount,
     0
   );
 
+  function getDrinkImage(name: string) {
+    const lower = name.toLowerCase();
+
+    if (lower.includes("wasser")) return "/drinks/wasser.png";
+    if (lower.includes("cola")) return "/drinks/cola.png";
+    if (lower.includes("bier")) return "/drinks/bier.png";
+
+    return "/drinks/default.png";
+  }
+
   return (
-    <div className="space-y-8 pb-28">
+    <div className="space-y-8">
 
       {/* Header */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-500">
-              Hallo {me?.name}
-            </p>
-            <h1 className="text-1xl font-bold">
-              Deine Strichliste
-            </h1>
-          </div>
+      <div>
+        <h1 className="text-2xl font-semibold">
+          Hallo {me?.name}
+        </h1>
 
-          <div className="bg-red-600 text-white px-4 py-2 rounded-2xl shadow-lg text-sm font-semibold">
-            {totalStriche} Striche
-          </div>
+        <div className="mt-2 inline-flex items-center gap-2 bg-red-600 text-white px-4 py-1 rounded-full text-sm shadow">
+          Gesamt-Striche: {totalStriche}
         </div>
-
-        <p className="text-gray-500 text-sm">
-          Striche machen am Smartphone & Überblick behalten
-        </p>
       </div>
 
-      {/* Drink Cards */}
+      {/* Drinks */}
       <div className="space-y-6">
         {drinks.map((drink) => {
           const cases = Math.floor(
@@ -146,46 +138,38 @@ export default function DashboardPage() {
           return (
             <div
               key={drink.id}
-              className="bg-white dark:bg-gray-900 rounded-3xl shadow-xl p-6 space-y-5 border border-gray-100 dark:border-gray-800 backdrop-blur-xl"
+              className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-5 border space-y-4"
             >
-              <div className="flex justify-between items-start">
 
-                <div>
+              <div className="flex items-center gap-4">
+                <img
+                  src={drink.image || getDrinkImage(drink.name)}
+                  alt={drink.name}
+                  className="w-16 h-16 rounded-2xl object-cover shadow"
+                />
+
+                <div className="flex-1">
                   <h3 className="text-lg font-semibold">
                     {drink.name}
                   </h3>
 
-                  {drink.myAmount > 0 && (
-                    <div className="mt-2 inline-block bg-blue-100 text-blue-700 text-xs px-3 py-1 rounded-full">
-                      Deine Striche: {drink.myAmount}
+                  <div className="text-sm text-gray-500">
+                    🧃 {cases} Kisten · 🍾 {bottles} Flaschen
+                  </div>
+
+                  {drink.stock <= drink.minStock && (
+                    <div className="text-xs text-yellow-600 mt-1">
+                      ⚠ Niedriger Bestand
                     </div>
                   )}
-                </div>
-
-                {drink.stock <= drink.minStock && (
-                  <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
-                    ⚠ Niedriger Bestand
-                  </span>
-                )}
-              </div>
-
-              <div className="text-sm text-gray-500 space-y-1">
-                <div>
-                  Bestand:{" "}
-                  <span className="font-medium">
-                    {cases} Kisten + {bottles} Flaschen
-                  </span>
                 </div>
               </div>
 
               {/* Counter */}
-              <div className="flex items-center justify-center gap-8">
-
+              <div className="flex items-center justify-center gap-6">
                 <button
-                  onClick={() =>
-                    changeValue(drink.id, -1)
-                  }
-                  className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-800 text-xl font-semibold active:scale-90 transition"
+                  onClick={() => changeValue(drink.id, -1)}
+                  className="w-12 h-12 rounded-full bg-gray-100 text-xl font-semibold active:scale-90 transition"
                 >
                   −
                 </button>
@@ -200,14 +184,12 @@ export default function DashboardPage() {
                     }))
                   }
                   placeholder="0"
-                  className="w-16 text-center text-lg font-semibold bg-transparent outline-none"
+                  className="w-16 text-center text-lg font-medium bg-transparent outline-none"
                 />
 
                 <button
-                  onClick={() =>
-                    changeValue(drink.id, 1)
-                  }
-                  className="w-12 h-12 rounded-full bg-green-600 text-white text-xl font-semibold shadow-md active:scale-90 transition"
+                  onClick={() => changeValue(drink.id, 1)}
+                  className="w-12 h-12 rounded-full bg-green-600 text-white text-xl font-semibold active:scale-90 transition shadow"
                 >
                   +
                 </button>
@@ -215,28 +197,23 @@ export default function DashboardPage() {
 
               <button
                 onClick={() => openConfirm(drink)}
-                className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium active:scale-[0.98] transition shadow-md"
+                className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium shadow active:scale-95 transition"
               >
                 Buchen
-              </button>
-
-              <button
-                onClick={undoLastBooking}
-                className="
-                  w-full py-2 mt-2
-                  rounded-2xl
-                  border border-red-600
-                  text-red-600
-                  font-medium
-                  hover:bg-red-600 hover:text-white
-                  transition
-                "
-              >
-                Letzte Buchung rückgängig
               </button>
             </div>
           );
         })}
+      </div>
+
+      {/* Undo Button */}
+      <div>
+        <button
+          onClick={undoLastBooking}
+          className="w-full py-3 rounded-2xl border border-red-600 text-red-600 font-medium hover:bg-red-600 hover:text-white transition"
+        >
+          Letzte Buchung rückgängig
+        </button>
       </div>
 
       {/* Confirm Modal */}
@@ -247,7 +224,7 @@ export default function DashboardPage() {
               Buchung bestätigen
             </h3>
 
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <p className="text-sm text-gray-600">
               {inputs[confirmDrink.id]}x{" "}
               {confirmDrink.name} buchen?
             </p>
@@ -255,7 +232,7 @@ export default function DashboardPage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmDrink(null)}
-                className="flex-1 py-2 rounded-xl bg-gray-200 dark:bg-gray-800"
+                className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-gray-800"
               >
                 Abbrechen
               </button>

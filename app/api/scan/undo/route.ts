@@ -16,7 +16,7 @@ export async function POST() {
     }
 
     // 🔥 Letzten Scan dieses Users finden
-    const lastLog = await prisma.log.findFirst({
+    const lastLog = await prisma.countLog.findFirst({
       where: {
         userId,
         type: "SCAN",
@@ -33,7 +33,7 @@ export async function POST() {
       );
     }
 
-    // 🔥 Zähler zurücksetzen
+    // 🔥 Count zurücksetzen
     await prisma.count.update({
       where: {
         userId_drinkId: {
@@ -46,8 +46,8 @@ export async function POST() {
       },
     });
 
-    // 🔥 Log erstellen
-    await prisma.log.create({
+    // 🔥 Undo Log erstellen
+    await prisma.countLog.create({
       data: {
         adminId: userId,
         userId,
@@ -62,6 +62,7 @@ export async function POST() {
 
   } catch (error) {
     console.error("UNDO ERROR:", error);
+
     return NextResponse.json(
       { error: "Serverfehler" },
       { status: 500 }

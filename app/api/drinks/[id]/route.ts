@@ -2,70 +2,57 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-async function requireAdmin() {
-  const userId = Number(cookies().get("userId")?.value);
-  if (!userId) return false;
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
-
-  return user?.role === "ADMIN";
-}
-
-/* =========================
-   PATCH – Bestand ändern
-========================= */
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  if (!(await requireAdmin())) {
-    return NextResponse.json(
-      { error: "Nicht erlaubt" },
-      { status: 403 }
-    );
-  }
-
-  const drinkId = Number(params.id);
-  const body = await req.json();
-
-  const updated = await prisma.drink.update({
-    where: { id: drinkId },
-    data: {
-      stock: Number(body.stock),
-    },
-  });
-
-  return NextResponse.json(updated);
-}
-
-/* =========================
-   DELETE – Getränk löschen
-========================= */
 export async function DELETE(
   req: Request,
   { params }: { params: { id: string } }
 ) {
-  if (!(await requireAdmin())) {
+  try {
+    const userIdRaw = cookies().get("userId")?.value;
+
+    if (!userIdRaw) {
+      return NextResponse.json(
+        { error: "Nicht eingeloggt" },
+        { status: 401 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: Number(userIdRaw) },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      return NextResponse.json(
+        { error: "Keine Berechtigung" },
+        { status: 403 }
+      );
+    }
+
+    const drinkId = Number(params.id);
+
+    // 🔥 zuerst Logs löschen (wegen FK)
+    await prisma.countLog.deleteMany({
+      where: { drinkId },
+    });
+
+    // 🔥 dann Counts löschen
+    await prisma.count.deleteMany({
+      where: { drinkId },
+    });
+
+    // 🔥 dann Drink löschen
+    await prisma.drink.delete({
+      where: { id: drinkId },
+    });
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error("DELETE DRINK ERROR:", error);
     return NextResponse.json(
-      { error: "Nicht erlaubt" },
-      { status: 403 }
+      { error: "Serverfehler" },
+      { status: 500 }
     );
   }
-
-  const drinkId = Number(params.id);
-
-  await prisma.count.deleteMany({
-    where: { drinkId },
-  });
-
-  await prisma.drink.delete({
-    where: { id: drinkId },
-  });
-
-  return NextResponse.json({ success: true });
 }

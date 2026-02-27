@@ -21,6 +21,28 @@ export default function EditStockModal({
   const total =
     cases * drink.unitsPerCase + bottles;
 
+  async function handleDelete() {
+  if (!drink) return;
+
+  const confirmed = confirm(
+    `Willst du ${drink.name} wirklich löschen?`
+  );
+
+  if (!confirmed) return;
+
+  const res = await fetch(`/api/drinks/${drink.id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    alert("Fehler beim Löschen");
+    return;
+  }
+
+  onClose();
+  window.location.reload(); // oder load() wenn vorhanden
+}  
+
   return (
     <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
 
@@ -71,6 +93,13 @@ export default function EditStockModal({
             className="flex-1 py-2 rounded-xl bg-green-600 text-white"
           >
             Speichern
+          </button>
+
+          <button
+            onClick={handleDelete}
+            className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium mt-4"
+          >
+            Getränk löschen
           </button>
         </div>
 

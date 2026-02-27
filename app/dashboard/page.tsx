@@ -118,9 +118,20 @@ export default function DashboardPage() {
   function getDrinkImage(name: string) {
     const lower = name.toLowerCase();
 
-    if (lower.includes("wasser")) return "/drinks/wasser.png";
+    if (lower.includes("wasser")) return "/drinks/gerolsteiner.png";
+    if (lower.includes("gerolsteiner")) return "/drinks/gerolsteiner.png";
     if (lower.includes("cola")) return "/drinks/cola.png";
-    if (lower.includes("bier")) return "/drinks/bier.png";
+    if (lower.includes("bier")) return "/drinks/reissdorf.png";
+    if (lower.includes("reissdorf")) return "/drinks/reissdorf.png";
+    if (lower.includes("sprite")) return "/drinks/sprite.png";
+    if (lower.includes("cola-light")) return "/drinks/cola-light.png";
+    if (lower.includes("cola light")) return "/drinks/cola-light.png";
+    if (lower.includes("cola zero")) return "/drinks/cola-zero.png";
+    if (lower.includes("cola-zero")) return "/drinks/cola-zero.png";
+    if (lower.includes("fanta")) return "/drinks/fanta.png";
+    if (lower.includes("limo")) return "/drinks/reissdorf.png";
+
+
 
     return "/drinks/default.png";
   }

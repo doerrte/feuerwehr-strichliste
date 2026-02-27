@@ -40,6 +40,8 @@ model Drink {
   stock         Int
   unitsPerCase  Int
   minStock      Int     @default(10)
+  image         String? // NEU
+
   counts        Count[]
   logs          CountLog[]
 }

@@ -27,14 +27,27 @@ export default function AddDrinkModal({
   function getImageForDrink(name: string) {
     const lower = name.toLowerCase();
 
-    if (lower.includes("Wasser")) return "/drinks/wasser.png";
-    if (lower.includes("Cola")) return "/drinks/cola.png";
-    if (lower.includes("Cola-Light")) return "/drinks/cola-light.png";
-    if (lower.includes("Cola-Zero")) return "/drinks/cola-zero.png";
-    if (lower.includes("Sprite")) return "/drinks/sprite.png";
-
-    if (lower.includes("Bier")) return "/drinks/reissdorf.png";
-    if (lower.includes("Fanta")) return "/drinks/fanta.png";
+    if (lower.includes("wasser")) return "/drinks/gerolsteiner.png";
+    if (lower.includes("gerolsteiner")) return "/drinks/gerolsteiner.png";
+    if (lower.includes("cola")) return "/drinks/cola.png";
+    if (lower.includes("coca-cola")) return "/drinks/cola.png";
+    if (lower.includes("coca cola")) return "/drinks/cola.png";
+    if (lower.includes("bier")) return "/drinks/reissdorf.png";
+    if (lower.includes("reissdorf")) return "/drinks/reissdorf.png";
+    if (lower.includes("sprite")) return "/drinks/sprite.png";
+    if (lower.includes("cola-light")) return "/drinks/cola-light.png";
+    if (lower.includes("coca-cola-light")) return "/drinks/cola-light.png";
+    if (lower.includes("coca cola-light")) return "/drinks/cola-light.png";
+    if (lower.includes("coca cola light")) return "/drinks/cola-light.png";
+    if (lower.includes("cola light")) return "/drinks/cola-light.png";
+    if (lower.includes("cola zero")) return "/drinks/cola-zero.png";
+    if (lower.includes("cola-zero")) return "/drinks/cola-zero.png";
+    if (lower.includes("coca-cola zero")) return "/drinks/cola-zero.png";
+    if (lower.includes("coca-cola-zero")) return "/drinks/cola-zero.png";
+    if (lower.includes("coca cola zero")) return "/drinks/cola-zero.png";
+    if (lower.includes("fanta")) return "/drinks/fanta.png";
+    if (lower.includes("limo")) return "/drinks/fanta.png";
+    if (lower.includes("limo weiß")) return "/drinks/sprite.png";
 
     return "/drinks/default.png";
   }
@@ -59,17 +72,23 @@ export default function AddDrinkModal({
 
     const res = await fetch("/api/drinks", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name: name.trim(),
-        stock: totalStock,
-        unitsPerCase: parsedUnitsPerCase,
-        minStock: parsedMinStock,
-        image: getImageForDrink(name),
+        name,
+        stock,
+        unitsPerCase,
+        minStock,
       }),
     });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null);
+      alert(errorData?.error || "Fehler beim Erstellen");
+      return;
+    }
+
+    onClose();
+    window.location.reload();
 
     const data = await res.json();
 

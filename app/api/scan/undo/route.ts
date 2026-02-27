@@ -6,19 +6,22 @@ export const dynamic = "force-dynamic";
 
 export async function POST() {
   try {
-    const userId = Number(cookies().get("userId")?.value);
+    const sessionUserId = Number(cookies().get("userId")?.value);
 
-    if (!userId) {
+    if (!sessionUserId) {
       return NextResponse.json(
         { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
 
-    // 🔥 Letzten Log dieses Users finden (egal welcher Typ)
+    // 🔥 Letzten Log dieses eingeloggten Users finden
     const lastLog = await prisma.countLog.findFirst({
       where: {
-        userId,
+        OR: [
+          { userId: sessionUserId },
+          { adminId: sessionUserId },
+        ],
       },
       orderBy: {
         createdAt: "desc",
@@ -32,11 +35,16 @@ export async function POST() {
       );
     }
 
-    // 🔥 Zähler zurücksetzen
+    console.log("LastLog", lastLog);
+    
+    // 🔥 WICHTIG: betroffener User aus Log
+    const affectedUserId = lastLog.userId;
+
+    // 🔥 Count sauber updaten
     await prisma.count.update({
       where: {
         userId_drinkId: {
-          userId,
+          userId: affectedUserId,
           drinkId: lastLog.drinkId,
         },
       },
@@ -48,8 +56,8 @@ export async function POST() {
     // 🔥 Undo Log erstellen
     await prisma.countLog.create({
       data: {
-        adminId: userId,
-        userId,
+        adminId: sessionUserId,
+        userId: affectedUserId,
         drinkId: lastLog.drinkId,
         oldAmount: lastLog.newAmount,
         newAmount: lastLog.oldAmount,

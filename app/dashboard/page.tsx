@@ -85,6 +85,23 @@ export default function DashboardPage() {
     load();
   }
 
+    async function undoLastBooking() {
+    if (!confirm("Letzte Buchung wirklich rückgängig machen?")) return;
+
+    const res = await fetch("/api/scan/undo", {
+      method: "POST",
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      alert(data.error);
+      return;
+    }
+
+    load(); // Getränke neu laden
+  }
+
   const totalStriche = drinks.reduce(
     (sum, d) => sum + (d.myAmount || 0),
     0
@@ -199,6 +216,21 @@ export default function DashboardPage() {
                 className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium active:scale-[0.98] transition shadow-md"
               >
                 Buchen
+              </button>
+
+              <button
+                onClick={undoLastBooking}
+                className="
+                  w-full py-2 mt-2
+                  rounded-2xl
+                  border border-red-600
+                  text-red-600
+                  font-medium
+                  hover:bg-red-600 hover:text-white
+                  transition
+                "
+              >
+                Letzte Buchung rückgängig
               </button>
             </div>
           );

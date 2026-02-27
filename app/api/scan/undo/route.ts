@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { LogType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -16,11 +15,10 @@ export async function POST() {
       );
     }
 
-    // 🔥 Letzte manuelle Buchung dieses Users finden
+    // 🔥 Letzten Log dieses Users finden (egal welcher Typ)
     const lastLog = await prisma.countLog.findFirst({
       where: {
         userId,
-        type: LogType.MANUAL,
       },
       orderBy: {
         createdAt: "desc",
@@ -34,7 +32,7 @@ export async function POST() {
       );
     }
 
-    // 🔥 Count zurücksetzen
+    // 🔥 Zähler zurücksetzen
     await prisma.count.update({
       where: {
         userId_drinkId: {
@@ -55,7 +53,7 @@ export async function POST() {
         drinkId: lastLog.drinkId,
         oldAmount: lastLog.newAmount,
         newAmount: lastLog.oldAmount,
-        type: LogType.SYSTEM, // 🔥 Undo als System-Eintrag markieren
+        type: "SYSTEM",
       },
     });
 

@@ -30,12 +30,25 @@ export default function DashboardPage() {
   }, []);
 
   async function load() {
-    const res = await fetch("/api/drinks/me", {
-      credentials: "include",
-    });
-    const data = await res.json();
-    setDrinks(data);
+  const res = await fetch("/api/drinks/me", {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    console.error("Drinks API Fehler");
+    setDrinks([]);
+    return;
   }
+
+  const data = await res.json();
+
+  if (!Array.isArray(data)) {
+    setDrinks([]);
+    return;
+  }
+
+  setDrinks(data);
+}
 
   async function loadMe() {
     const res = await fetch("/api/auth/me", {

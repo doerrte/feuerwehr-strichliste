@@ -86,6 +86,7 @@ export default function DashboardPage() {
   }
 
     async function undoLastBooking() {
+      console.log("UNDO CLICKED")
     if (!confirm("Letzte Buchung wirklich rückgängig machen?")) return;
 
     const res = await fetch("/api/scan/undo", {
@@ -98,6 +99,7 @@ export default function DashboardPage() {
       alert(data.error);
       return;
     }
+
 
     load(); // Getränke neu laden
   }

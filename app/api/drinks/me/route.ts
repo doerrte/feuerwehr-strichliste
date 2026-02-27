@@ -15,13 +15,22 @@ export async function GET() {
       );
     }
 
-    const userId = Number(userIdRaw);
+    const userId = parseInt(userIdRaw);
+
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: "Ungültige Session" },
+        { status: 401 }
+      );
+    }
 
     const drinks = await prisma.drink.findMany({
       orderBy: { name: "asc" },
       include: {
         counts: {
-          where: { userId },
+          where: {
+            userId: userId,
+          },
         },
       },
     });
@@ -29,13 +38,16 @@ export async function GET() {
     const result = drinks.map((drink) => ({
       id: drink.id,
       name: drink.name,
-      amount: drink.counts[0]?.amount ?? 0,
+      amount: drink.counts.length > 0
+        ? drink.counts[0].amount
+        : 0,
       stock: drink.stock,
       unitsPerCase: drink.unitsPerCase,
       minStock: drink.minStock,
     }));
 
     return NextResponse.json(result);
+
   } catch (error) {
     console.error("DRINKS ME ERROR:", error);
 

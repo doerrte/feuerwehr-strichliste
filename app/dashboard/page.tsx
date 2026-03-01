@@ -5,115 +5,106 @@ import { useEffect, useState } from "react";
 type Drink = {
   id: number;
   name: string;
-  amount: number;
   stock: number;
   unitsPerCase: number;
   minStock: number;
-  image?: string;
-};
-
-type Me = {
-  id: number;
-  name: string;
-  role: "USER" | "ADMIN";
+  amount: number; // 🔥 deine Striche
 };
 
 export default function DashboardPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [inputs, setInputs] = useState<Record<number, string>>({});
-  const [confirmDrink, setConfirmDrink] = useState<Drink | null>(null);
-  const [me, setMe] = useState<Me | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [bookingAmounts, setBookingAmounts] = useState<
+    Record<number, number>
+  >({});
 
+  // 🔥 Getränke laden
   useEffect(() => {
-    load();
-    loadMe();
+    fetchDrinks();
   }, []);
 
-  async function load() {
-  const res = await fetch("/api/drinks/me", {
-    credentials: "include",
-  });
+  async function fetchDrinks() {
+    try {
+      const res = await fetch("/api/drinks/me");
+      const data = await res.json();
 
-  if (!res.ok) {
-    console.error("Drinks API Fehler");
-    setDrinks([]);
-    return;
+      setDrinks(data);
+    } catch (error) {
+      console.error("Drinks API Fehler", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  const data = await res.json();
+  // 🔥 Gesamt-Striche berechnen
+  const totalStriche = drinks.reduce(
+    (sum, drink) => sum + drink.amount,
+    0
+  );
 
-  if (!Array.isArray(data)) {
-    setDrinks([]);
-    return;
-  }
-
-  setDrinks(data);
-}
-
-  async function loadMe() {
-    const res = await fetch("/api/auth/me", {
-      credentials: "include",
-    });
-    const data = await res.json();
-    setMe(data.user);
-  }
-
-  function changeValue(id: number, delta: number) {
-    setInputs((prev) => {
-      const current = Number(prev[id] || 0);
-      const next = current + delta;
-      return { ...prev, [id]: next <= 0 ? "" : String(next) };
-    });
-  }
-
-  function openConfirm(drink: Drink) {
-    if (!inputs[drink.id]) return;
-    setConfirmDrink(drink);
-  }
-
-  async function confirmBooking() {
-    if (!confirmDrink) return;
-
-    const amount = Number(inputs[confirmDrink.id]);
+  // 🔥 Buchung durchführen
+  async function handleBook(drinkId: number) {
+    const quantity = bookingAmounts[drinkId] || 1;
 
     const res = await fetch("/api/scan", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        drinkId: confirmDrink.id,
-        amount,
+        drinkId,
+        quantity,
       }),
     });
 
     if (!res.ok) {
-      alert("Fehler beim Buchen");
+      const err = await res.json().catch(() => null);
+      alert(err?.error || "Fehler beim Buchen");
       return;
     }
 
-    setInputs((prev) => ({ ...prev, [confirmDrink.id]: "" }));
-    setConfirmDrink(null);
-    load();
+    // 🔥 UI sofort aktualisieren
+    setDrinks((prev) =>
+      prev.map((d) =>
+        d.id === drinkId
+          ? {
+              ...d,
+              amount: d.amount + quantity,
+              stock: d.stock - quantity,
+            }
+          : d
+      )
+    );
+
+    // Buchungsmenge zurücksetzen
+    setBookingAmounts((prev) => ({
+      ...prev,
+      [drinkId]: 1,
+    }));
   }
 
-  async function undoLastBooking() {
+  // 🔥 Undo letzte Buchung
+  async function handleUndo() {
     const res = await fetch("/api/scan/undo", {
       method: "POST",
     });
 
-    const data = await res.json();
-
     if (!res.ok) {
-      alert(data.error || "Keine Buchung gefunden");
+      alert("Keine Buchung gefunden");
       return;
     }
 
-    load();
+    // Einfach neu laden (sauberste Lösung)
+    fetchDrinks();
   }
 
-  const totalStriche = drinks.reduce(
-    (sum, d) => sum + d.amount,
-    0
-  );
+  
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center">
+        Lade Dashboard...
+      </div>
+    );
+  }
 
   function getDrinkImage(name: string) {
     const lower = name.toLowerCase();
@@ -134,7 +125,8 @@ export default function DashboardPage() {
     if (lower.includes("fassbrause zitrone")) return "/drinks/fassbrause-zitrone.png";
     if (lower.includes("fassbrause-zitrone")) return "/drinks/fassbrause-zitrone.png";
     if (lower.includes("fassbrause")) return "/drinks/fassbrause-zitrone.png";
-
+    if (lower.includes("apfelschorle")) return "/drinks/apfelschorle.png";
+    if (lower.includes("apfelsaft")) return "/drinks/apfelschorle.png";
 
 
 
@@ -143,149 +135,105 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="p-6 max-w-md mx-auto space-y-6">
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold">
-          Hallo {me?.name}
+        <h1 className="text-2xl font-bold">
+          Hallo 👋
         </h1>
 
-        <div className="mt-2 inline-flex items-center gap-2 bg-red-600 text-white px-4 py-1 rounded-full text-sm shadow">
+        <div className="mt-2 inline-block bg-red-600 text-white px-4 py-1 rounded-full text-sm">
           Gesamt-Striche: {totalStriche}
         </div>
       </div>
 
-      {/* Drinks */}
-      <div className="space-y-6">
-        {drinks.map((drink) => {
-          const cases = Math.floor(
-            drink.stock / drink.unitsPerCase
-          );
-          const bottles =
-            drink.stock % drink.unitsPerCase;
-
-          return (
-            <div
-              key={drink.id}
-              className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-5 border space-y-4"
-            >
-
-              <div className="flex items-center gap-4">
-                <img
-                  src={drink.image || getDrinkImage(drink.name)}
-                  alt={drink.name}
-                  className="w-16 h-16 rounded-2xl object-cover shadow"
-                />
-
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold">
-                    {drink.name}
-                  </h3>
-                  
-                  <div className="text-sm text-gray-600">
-                    <p className="text-sm text-gray-500 mt-1">
-                      Deine Striche: 
-                      <span className="font-semibold text-red-600">
-                        {drink.amount}
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="text-sm text-gray-500">
-                    🧃 {cases} Kisten · 🍾 {bottles} Flaschen
-                  </div>
-
-                  {drink.stock <= drink.minStock && (
-                    <div className="text-xs text-yellow-600 mt-1">
-                      ⚠ Niedriger Bestand
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Counter */}
-              <div className="flex items-center justify-center gap-6">
-                <button
-                  onClick={() => changeValue(drink.id, -1)}
-                  className="w-12 h-12 rounded-full bg-gray-100 text-xl font-semibold active:scale-90 transition"
-                >
-                  −
-                </button>
-
-                <input
-                  type="number"
-                  value={inputs[drink.id] || ""}
-                  onChange={(e) =>
-                    setInputs((prev) => ({
-                      ...prev,
-                      [drink.id]: e.target.value,
-                    }))
-                  }
-                  placeholder="0"
-                  className="w-16 text-center text-lg font-medium bg-transparent outline-none"
-                />
-
-                <button
-                  onClick={() => changeValue(drink.id, 1)}
-                  className="w-12 h-12 rounded-full bg-green-600 text-white text-xl font-semibold active:scale-90 transition shadow"
-                >
-                  +
-                </button>
-              </div>
-
-              <button
-                onClick={() => openConfirm(drink)}
-                className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium shadow active:scale-95 transition"
-              >
-                Buchen
-              </button>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Undo Button */}
-      <div>
-        <button
-          onClick={undoLastBooking}
-          className="w-full py-3 rounded-2xl border border-red-600 text-red-600 font-medium hover:bg-red-600 hover:text-white transition"
+      {/* Getränk Cards */}
+      {drinks.map((drink) => (
+        <div
+          key={drink.id}
+          className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 space-y-4"
         >
-          Letzte Buchung rückgängig
-        </button>
-      </div>
+          <div className="flex items-center gap-3">
 
-      {/* Confirm Modal */}
-      {confirmDrink && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-6">
-          <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-full max-w-sm space-y-4 shadow-2xl">
-            <h3 className="text-lg font-semibold">
-              Buchung bestätigen
-            </h3>
+            <img
+              src={`/drinks/default.png`}
+              alt={drink.name}
+              className="w-12 h-12 object-contain"
+            />
 
-            <p className="text-sm text-gray-600">
-              {inputs[confirmDrink.id]}x{" "}
-              {confirmDrink.name} buchen?
-            </p>
+            <div>
+              <h2 className="font-semibold text-lg">
+                {drink.name}
+              </h2>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setConfirmDrink(null)}
-                className="flex-1 py-2 rounded-xl bg-gray-100 dark:bg-gray-800"
-              >
-                Abbrechen
-              </button>
+              {/* 🔥 Deine Striche */}
+              <p className="text-sm text-gray-500">
+                Deine Striche:{" "}
+                <span className="font-semibold text-red-600">
+                  {drink.amount}
+                </span>
+              </p>
 
-              <button
-                onClick={confirmBooking}
-                className="flex-1 py-2 rounded-xl bg-red-600 text-white"
-              >
-                Bestätigen
-              </button>
+              <p className="text-sm text-gray-500">
+                Bestand: {drink.stock}
+              </p>
             </div>
           </div>
+
+          {/* Menge wählen */}
+          <div className="flex items-center justify-center gap-4">
+
+            <button
+              onClick={() =>
+                setBookingAmounts((prev) => ({
+                  ...prev,
+                  [drink.id]:
+                    (prev[drink.id] || 1) > 1
+                      ? (prev[drink.id] || 1) - 1
+                      : 1,
+                }))
+              }
+              className="w-10 h-10 rounded-full bg-gray-200"
+            >
+              −
+            </button>
+
+            <span className="text-lg font-semibold">
+              {bookingAmounts[drink.id] || 1}
+            </span>
+
+            <button
+              onClick={() =>
+                setBookingAmounts((prev) => ({
+                  ...prev,
+                  [drink.id]:
+                    (prev[drink.id] || 1) + 1,
+                }))
+              }
+              className="w-10 h-10 rounded-full bg-green-500 text-white"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Buchen */}
+          <button
+            onClick={() => handleBook(drink.id)}
+            className="w-full py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition"
+          >
+            Buchen
+          </button>
         </div>
-      )}
+      ))}
+
+      {/* Undo Button */}
+      <button
+        onClick={handleUndo}
+        className="w-full py-3 rounded-xl border border-red-500 text-red-600 hover:bg-red-50 transition"
+      >
+        Letzte Buchung rückgängig
+      </button>
 
     </div>
   );

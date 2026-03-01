@@ -220,7 +220,7 @@ export default function DashboardPage() {
                   setBookingAmounts((prev) => ({
                     ...prev,
                     [drink.id]:
-                      (prev[drink.id] || 1) > 1
+                      (prev[drink.id] || 0) > 1
                         ? (prev[drink.id] || 1) - 1
                         : 1,
                   }))

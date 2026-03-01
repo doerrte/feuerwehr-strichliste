@@ -5,91 +5,98 @@ import { LogType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
-// 🔎 Letzte Buchung abrufen (nur anzeigen)
-export async function GET() {
-  const userIdRaw = cookies().get("userId")?.value;
-  if (!userIdRaw)
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+export async function POST(req: Request) {
+  try {
+    const userIdRaw = cookies().get("userId")?.value;
 
-  const userId = Number(userIdRaw);
+    if (!userIdRaw) {
+      return NextResponse.json(
+        { error: "Nicht eingeloggt" },
+        { status: 401 }
+      );
+    }
 
-  const lastLog = await prisma.countLog.findFirst({
-    where: {
-      userId,
-      type: LogType.MANUAL,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      drink: true,
-    },
-  });
+    const userId = Number(userIdRaw);
+    const { drinkId, quantity } = await req.json();
 
-  if (!lastLog)
-    return NextResponse.json({ error: "Keine Buchung gefunden" }, { status: 404 });
+    if (!drinkId) {
+      return NextResponse.json(
+        { error: "DrinkId fehlt" },
+        { status: 400 }
+      );
+    }
 
-  const quantity = lastLog.newAmount - lastLog.oldAmount;
+    const amountToAdd = quantity ? Number(quantity) : 1;
 
-  return NextResponse.json({
-    drinkId: lastLog.drinkId,
-    drinkName: lastLog.drink.name,
-    quantity,
-    createdAt: lastLog.createdAt,
-  });
-}
+    // 🔥 1. Bestand prüfen
+    const drink = await prisma.drink.findUnique({
+      where: { id: drinkId },
+    });
 
-// 🔥 Wirklich rückgängig machen
-export async function POST() {
-  const userIdRaw = cookies().get("userId")?.value;
-  if (!userIdRaw)
-    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+    if (!drink) {
+      return NextResponse.json(
+        { error: "Getränk nicht gefunden" },
+        { status: 404 }
+      );
+    }
 
-  const userId = Number(userIdRaw);
+    if (drink.stock < amountToAdd) {
+      return NextResponse.json(
+        { error: "Nicht genug Bestand" },
+        { status: 400 }
+      );
+    }
 
-  const lastLog = await prisma.countLog.findFirst({
-    where: {
-      userId,
-      type: LogType.MANUAL,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  if (!lastLog)
-    return NextResponse.json({ error: "Keine Buchung gefunden" }, { status: 404 });
-
-  const quantity = lastLog.newAmount - lastLog.oldAmount;
-
-  await prisma.$transaction([
-    prisma.count.update({
+    // 🔥 2. Count erhöhen
+    const updatedCount = await prisma.count.upsert({
       where: {
         userId_drinkId: {
           userId,
-          drinkId: lastLog.drinkId,
+          drinkId,
         },
       },
-      data: {
+      update: {
         amount: {
-          decrement: quantity,
+          increment: amountToAdd,
         },
       },
-    }),
+      create: {
+        userId,
+        drinkId,
+        amount: amountToAdd,
+      },
+    });
 
-    prisma.drink.update({
-      where: { id: lastLog.drinkId },
+    // 🔥 3. Lager reduzieren
+    await prisma.drink.update({
+      where: { id: drinkId },
       data: {
         stock: {
-          increment: quantity,
+          decrement: amountToAdd,
         },
       },
-    }),
+    });
 
-    prisma.countLog.delete({
-      where: { id: lastLog.id },
-    }),
-  ]);
+    // 🔥 4. Log speichern
+    await prisma.countLog.create({
+      data: {
+        adminId: userId,
+        userId,
+        drinkId,
+        oldAmount: updatedCount.amount - amountToAdd,
+        newAmount: updatedCount.amount,
+        type: LogType.MANUAL,
+      },
+    });
 
-  return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error("SCAN ERROR:", error);
+
+    return NextResponse.json(
+      { error: "Serverfehler" },
+      { status: 500 }
+    );
+  }
 }

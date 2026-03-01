@@ -1,78 +1,95 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { LogType } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
+// 🔎 Letzte Buchung abrufen (nur anzeigen)
+export async function GET() {
+  const userIdRaw = cookies().get("userId")?.value;
+  if (!userIdRaw)
+    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
+
+  const userId = Number(userIdRaw);
+
+  const lastLog = await prisma.countLog.findFirst({
+    where: {
+      userId,
+      type: LogType.MANUAL,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    include: {
+      drink: true,
+    },
+  });
+
+  if (!lastLog)
+    return NextResponse.json({ error: "Keine Buchung gefunden" }, { status: 404 });
+
+  const quantity = lastLog.newAmount - lastLog.oldAmount;
+
+  return NextResponse.json({
+    drinkId: lastLog.drinkId,
+    drinkName: lastLog.drink.name,
+    quantity,
+    createdAt: lastLog.createdAt,
+  });
+}
+
+// 🔥 Wirklich rückgängig machen
 export async function POST() {
-  try {
-    const sessionUserId = Number(cookies().get("userId")?.value);
+  const userIdRaw = cookies().get("userId")?.value;
+  if (!userIdRaw)
+    return NextResponse.json({ error: "Nicht eingeloggt" }, { status: 401 });
 
-    if (!sessionUserId) {
-      return NextResponse.json(
-        { error: "Nicht eingeloggt" },
-        { status: 401 }
-      );
-    }
+  const userId = Number(userIdRaw);
 
-    // 🔥 Letzten Log dieses eingeloggten Users finden
-    const lastLog = await prisma.countLog.findFirst({
-      where: {
-        OR: [
-          { userId: sessionUserId },
-          { adminId: sessionUserId },
-        ],
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+  const lastLog = await prisma.countLog.findFirst({
+    where: {
+      userId,
+      type: LogType.MANUAL,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
-    if (!lastLog) {
-      return NextResponse.json(
-        { error: "Keine Buchung gefunden" },
-        { status: 400 }
-      );
-    }
+  if (!lastLog)
+    return NextResponse.json({ error: "Keine Buchung gefunden" }, { status: 404 });
 
-    console.log("LastLog", lastLog);
-    
-    // 🔥 WICHTIG: betroffener User aus Log
-    const affectedUserId = lastLog.userId;
+  const quantity = lastLog.newAmount - lastLog.oldAmount;
 
-    // 🔥 Count sauber updaten
-    await prisma.count.update({
+  await prisma.$transaction([
+    prisma.count.update({
       where: {
         userId_drinkId: {
-          userId: affectedUserId,
+          userId,
           drinkId: lastLog.drinkId,
         },
       },
       data: {
-        amount: lastLog.oldAmount,
+        amount: {
+          decrement: quantity,
+        },
       },
-    });
+    }),
 
-    // 🔥 Undo Log erstellen
-    await prisma.countLog.create({
+    prisma.drink.update({
+      where: { id: lastLog.drinkId },
       data: {
-        adminId: sessionUserId,
-        userId: affectedUserId,
-        drinkId: lastLog.drinkId,
-        oldAmount: lastLog.newAmount,
-        newAmount: lastLog.oldAmount,
-        type: "SYSTEM",
+        stock: {
+          increment: quantity,
+        },
       },
-    });
+    }),
 
-    return NextResponse.json({ success: true });
+    prisma.countLog.delete({
+      where: { id: lastLog.id },
+    }),
+  ]);
 
-  } catch (error) {
-    console.error("UNDO ERROR:", error);
-
-    return NextResponse.json(
-      { error: "Serverfehler" },
-      { status: 500 }
-    );
-  }
+  return NextResponse.json({ success: true });
 }

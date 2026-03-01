@@ -83,7 +83,7 @@ export default function LoginPage() {
           <h1 className="text-xl font-semibold text-white">
             Login mit PIN
           </h1>
-          <p>Im PIN Feld bitte nicht eure Telefonnummer eingeben, nur euren PIN</p>
+          <p className="text-center text-white">Im PIN Feld bitte nicht eure Telefonnummer eingeben, nur euren PIN</p>
         </div>
 
         {/* Telefonnummer */}

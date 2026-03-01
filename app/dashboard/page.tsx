@@ -83,7 +83,7 @@ export default function DashboardPage() {
   }
 
   function handleBook(drinkId: number) {
-    const quantity = bookingAmounts[drinkId] || 1;
+    const quantity = bookingAmounts[drinkId] ?? 1;
     setConfirmBooking({ drinkId, quantity });
   }
 
@@ -217,14 +217,14 @@ export default function DashboardPage() {
 
               <button
                 onClick={() =>
-                  setBookingAmounts((prev) => ({
+                setBookingAmounts((prev) => {
+                  const current = prev[drink.id] ?? 1;
+                  return {
                     ...prev,
-                    [drink.id]:
-                      (prev[drink.id] || 0) > 1
-                        ? (prev[drink.id] || 1) - 1
-                        : 1,
-                  }))
-                }
+                    [drink.id]: current > 1 ? current - 1 : 1,
+                  };
+                })
+              }
                 className="w-10 h-10 rounded-full bg-gray-200"
               >
                 −
@@ -233,15 +233,24 @@ export default function DashboardPage() {
               <input
                 type="number"
                 min="1"
-                value={bookingAmounts[drink.id] || ""}
+                placeholder="1"
+                value={bookingAmounts[drink.id] ?? ""}
                 onChange={(e) => {
-                  const value = Math.max(
-                    1,
-                    Number(e.target.value)
-                  );
+                  const value = e.target.value;
+
+                  if (value === "") {
+                    setBookingAmounts((prev) => ({
+                      ...prev,
+                      [drink.id]: undefined,
+                    }));
+                    return;
+                  }
+
+                  const number = Math.max(1, Number(value));
+
                   setBookingAmounts((prev) => ({
                     ...prev,
-                    [drink.id]: value,
+                    [drink.id]: number,
                   }));
                 }}
                 className="w-16 text-center text-lg font-semibold border rounded-lg py-1"
@@ -252,7 +261,7 @@ export default function DashboardPage() {
                   setBookingAmounts((prev) => ({
                     ...prev,
                     [drink.id]:
-                      (prev[drink.id] || 1) + 1,
+                      (prev[drink.id] ?? 0) + 1,
                   }))
                 }
                 className="w-10 h-10 rounded-full bg-green-500 text-white"

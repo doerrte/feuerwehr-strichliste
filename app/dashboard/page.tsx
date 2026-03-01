@@ -233,7 +233,7 @@ export default function DashboardPage() {
               <input
                 type="number"
                 min="1"
-                placeholder="1"
+                placeholder=""
                 value={bookingAmounts[drink.id] ?? ""}
                 onChange={(e) => {
                   const value = e.target.value;

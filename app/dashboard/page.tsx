@@ -184,6 +184,7 @@ export default function DashboardPage() {
           {/* Menge wählen */}
           <div className="flex items-center justify-center gap-4">
 
+            {/* Minus */}
             <button
               onClick={() =>
                 setBookingAmounts((prev) => ({
@@ -199,22 +200,34 @@ export default function DashboardPage() {
               −
             </button>
 
-            <span className="text-lg font-semibold">
-              {bookingAmounts[drink.id] || 1}
-            </span>
+            {/* 🔥 Direkt editierbares Feld */}
+            <input
+              type="number"
+              min="1"
+              value={bookingAmounts[drink.id] || 1}
+              onChange={(e) => {
+                const value = Math.max(1, Number(e.target.value));
+                setBookingAmounts((prev) => ({
+                  ...prev,
+                  [drink.id]: value,
+                }));
+              }}
+              className="w-16 text-center text-lg font-semibold border rounded-lg py-1"
+            />
 
+            {/* Plus */}
             <button
               onClick={() =>
                 setBookingAmounts((prev) => ({
                   ...prev,
-                  [drink.id]:
-                    (prev[drink.id] || 1) + 1,
+                  [drink.id]: (prev[drink.id] || 1) + 1,
                 }))
               }
               className="w-10 h-10 rounded-full bg-green-500 text-white"
             >
               +
             </button>
+
           </div>
 
           {/* Buchen */}

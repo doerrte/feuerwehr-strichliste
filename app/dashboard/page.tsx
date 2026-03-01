@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const [lastBooking, setLastBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [bookingAmounts, setBookingAmounts] =
-    useState<Record<number, number>>({});
+    useState<Record<number, number | undefined>>({});
 
   const [confirmBooking, setConfirmBooking] = useState<{
     drinkId: number;

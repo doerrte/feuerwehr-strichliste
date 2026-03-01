@@ -43,8 +43,17 @@ export default function DashboardPage() {
   );
 
   // 🔥 Buchung durchführen
-  async function handleBook(drinkId: number) {
+    async function handleBook(drinkId: number) {
     const quantity = bookingAmounts[drinkId] || 1;
+
+    const drink = drinks.find((d) => d.id === drinkId);
+    if (!drink) return;
+
+    const confirmed = confirm(
+      `Möchtest du wirklich ${quantity}x ${drink.name} buchen?`
+    );
+
+    if (!confirmed) return;
 
     const res = await fetch("/api/scan", {
       method: "POST",
@@ -61,7 +70,7 @@ export default function DashboardPage() {
       return;
     }
 
-    // 🔥 UI sofort aktualisieren
+    // UI sofort aktualisieren
     setDrinks((prev) =>
       prev.map((d) =>
         d.id === drinkId
@@ -74,7 +83,7 @@ export default function DashboardPage() {
       )
     );
 
-    // Buchungsmenge zurücksetzen
+    // Menge zurücksetzen
     setBookingAmounts((prev) => ({
       ...prev,
       [drinkId]: 1,
@@ -204,7 +213,7 @@ export default function DashboardPage() {
             <input
               type="number"
               min="1"
-              value={bookingAmounts[drink.id] || 1}
+              value={bookingAmounts[drink.id] || ""}
               onChange={(e) => {
                 const value = Math.max(1, Number(e.target.value));
                 setBookingAmounts((prev) => ({

@@ -7,93 +7,86 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
-    const sessionUserId = Number(cookies().get("userId")?.value);
+    const userIdRaw = cookies().get("userId")?.value;
 
-    if (!sessionUserId) {
+    if (!userIdRaw) {
       return NextResponse.json(
         { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
 
-    const body = await req.json();
+    const userId = Number(userIdRaw);
+    const { drinkId, quantity } = await req.json();
 
-    const parsedDrinkId = Number(body.drinkId);
-    const parsedAmount = Number(body.amount);
-
-    if (
-      !parsedDrinkId ||
-      isNaN(parsedAmount) ||
-      parsedAmount <= 0
-    ) {
+    if (!drinkId) {
       return NextResponse.json(
-        { error: "Ungültige Daten" },
+        { error: "DrinkId fehlt" },
         { status: 400 }
       );
     }
 
-    // 🔥 User prüfen
-    const user = await prisma.user.findUnique({
-      where: { id: sessionUserId },
-      select: { id: true, active: true },
+    const amountToAdd = quantity ? Number(quantity) : 1;
+
+    // 🔥 1. Bestand prüfen
+    const drink = await prisma.drink.findUnique({
+      where: { id: drinkId },
     });
 
-    if (!user || !user.active) {
+    if (!drink) {
       return NextResponse.json(
-        { error: "User nicht aktiv" },
-        { status: 403 }
+        { error: "Getränk nicht gefunden" },
+        { status: 404 }
       );
     }
 
-    // 🔥 Transaktion (atomic)
-    await prisma.$transaction(async (tx) => {
+    if (drink.stock < amountToAdd) {
+      return NextResponse.json(
+        { error: "Nicht genug Bestand" },
+        { status: 400 }
+      );
+    }
 
-      const existingCount = await tx.count.findUnique({
-        where: {
-          userId_drinkId: {
-            userId: sessionUserId,
-            drinkId: parsedDrinkId,
-          },
+    // 🔥 2. Count erhöhen
+    const updatedCount = await prisma.count.upsert({
+      where: {
+        userId_drinkId: {
+          userId,
+          drinkId,
         },
-      });
-
-      const oldAmount = existingCount?.amount ?? 0;
-      const newAmount = oldAmount + parsedAmount;
-
-      if (!existingCount) {
-        await tx.count.create({
-          data: {
-            userId: sessionUserId,
-            drinkId: parsedDrinkId,
-            amount: newAmount,
-          },
-        });
-      } else {
-        await tx.count.update({
-          where: {
-            userId_drinkId: {
-              userId: sessionUserId,
-              drinkId: parsedDrinkId,
-            },
-          },
-          data: {
-            amount: newAmount,
-          },
-        });
-      }
-
-      // 🔥 Log speichern
-      await tx.countLog.create({
-        data: {
-          adminId: sessionUserId,
-          userId: sessionUserId,
-          drinkId: parsedDrinkId,
-          oldAmount,
-          newAmount,
-          type: LogType.MANUAL,
+      },
+      update: {
+        amount: {
+          increment: amountToAdd,
         },
-      });
+      },
+      create: {
+        userId,
+        drinkId,
+        amount: amountToAdd,
+      },
+    });
 
+    // 🔥 3. Lager reduzieren
+    await prisma.drink.update({
+      where: { id: drinkId },
+      data: {
+        stock: {
+          decrement: amountToAdd,
+        },
+      },
+    });
+
+    // 🔥 4. Log speichern
+    await prisma.countLog.create({
+      data: {
+        adminId: userId,
+        userId,
+        drinkId,
+        oldAmount: updatedCount.amount - amountToAdd,
+        newAmount: updatedCount.amount,
+        type: LogType.MANUAL,
+      },
     });
 
     return NextResponse.json({ success: true });

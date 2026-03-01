@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { PlusIcon } from "@heroicons/react/24/solid";
-import EditStockModal from "./EditStockModal";
-import AddDrinkModal from "./AddDrinkModal";
+import EditStockModal from "@/components/EditStockModal";
+import AddDrinkModal from "@/components/AddDrinkModal";
 
 
 type Drink = {

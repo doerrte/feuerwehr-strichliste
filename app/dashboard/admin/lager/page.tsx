@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import EditStockModal from "@/components/EditStockModal";
+import { PlusIcon } from "@heroicons/react/24/solid";
+import EditStockModal from "./EditStockModal";
+import AddDrinkModal from "./AddDrinkModal";
+
 
 type Drink = {
   id: number;
   name: string;
-  stock: number;        // Gesamtflaschen
-  unitsPerCase: number; // Flaschen pro Kiste
+  stock: number;
+  unitsPerCase: number;
   minStock: number;
 };
 
@@ -16,6 +19,8 @@ export default function LagerPage() {
   const [loading, setLoading] = useState(true);
   const [selectedDrink, setSelectedDrink] =
     useState<Drink | null>(null);
+  const [showAddModal, setShowAddModal] =
+    useState(false);
 
   useEffect(() => {
     loadDrinks();
@@ -76,10 +81,22 @@ export default function LagerPage() {
   return (
     <div className="p-6 max-w-md mx-auto space-y-6">
 
-      <h1 className="text-2xl font-bold">
-        📦 Lagerverwaltung
-      </h1>
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">
+          📦 Lagerverwaltung
+        </h1>
 
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition"
+        >
+          <PlusIcon className="w-6 h-6" />
+          
+        </button>
+      </div>
+
+      {/* Drink Cards */}
       {drinks.map((drink) => {
         const breakdown = getStockBreakdown(
           drink.stock,
@@ -133,6 +150,7 @@ export default function LagerPage() {
         );
       })}
 
+      {/* Modals */}
       {selectedDrink && (
         <EditStockModal
           drink={selectedDrink}
@@ -140,6 +158,15 @@ export default function LagerPage() {
             setSelectedDrink(null)
           }
           onSave={handleSave}
+        />
+      )}
+
+      {showAddModal && (
+        <AddDrinkModal
+          onClose={() =>
+            setShowAddModal(false)
+          }
+          onCreated={loadDrinks}
         />
       )}
     </div>

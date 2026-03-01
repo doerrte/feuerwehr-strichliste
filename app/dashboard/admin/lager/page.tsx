@@ -89,7 +89,7 @@ export default function LagerPage() {
 
         <button
           onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-red-700 transition"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-600 text-white hover:bg-green-700 transition"
         >
           <PlusIcon className="w-6 h-6" />
           

@@ -157,7 +157,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
 
             <img
-              src={`/drinks/default.png`}
+              src={getDrinkImage(drink.name)}
               alt={drink.name}
               className="w-12 h-12 object-contain"
             />

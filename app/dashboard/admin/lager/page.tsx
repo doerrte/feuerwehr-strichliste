@@ -2,152 +2,146 @@
 
 import { useEffect, useState } from "react";
 import EditStockModal from "@/components/EditStockModal";
-import AddDrinkModal from "@/components/AddDrinkModal";
 
 type Drink = {
   id: number;
   name: string;
-  stock: number;
-  unitsPerCase: number;
+  stock: number;        // Gesamtflaschen
+  unitsPerCase: number; // Flaschen pro Kiste
   minStock: number;
 };
 
 export default function LagerPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [selectedDrink, setSelectedDrink] = useState<Drink | null>(null);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [selectedDrink, setSelectedDrink] =
+    useState<Drink | null>(null);
 
   useEffect(() => {
-    load();
+    loadDrinks();
   }, []);
 
-  async function load() {
-    const res = await fetch("/api/drinks");
-    const data = await res.json();
-    setDrinks(data);
+  async function loadDrinks() {
+    try {
+      const res = await fetch("/api/drinks");
+      const data = await res.json();
+      setDrinks(data);
+    } catch (error) {
+      console.error("Lager Fehler:", error);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  async function updateStock(newStock: number) {
+  function getStockBreakdown(
+    stock: number,
+    unitsPerCase: number
+  ) {
+    const cases = Math.floor(stock / unitsPerCase);
+    const bottles = stock % unitsPerCase;
+    return { cases, bottles };
+  }
+
+  async function handleSave(stock: number) {
     if (!selectedDrink) return;
 
-    await fetch(`/api/drinks/${selectedDrink.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ stock: newStock }),
-    });
+    const res = await fetch(
+      `/api/drinks/${selectedDrink.id}`,
+      {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ stock }),
+      }
+    );
+
+    if (!res.ok) {
+      alert("Fehler beim Speichern");
+      return;
+    }
 
     setSelectedDrink(null);
-    load();
+    loadDrinks();
+  }
+
+  if (loading) {
+    return (
+      <div className="p-6 text-center">
+        Lade Lager...
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8 pb-28">
+    <div className="p-6 max-w-md mx-auto space-y-6">
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold flex items-center gap-2">
-          📦 Lagerverwaltung
-        </h1>
+      <h1 className="text-2xl font-bold">
+        📦 Lagerverwaltung
+      </h1>
 
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="
-            flex items-center gap-2
-            bg-green-600 hover:bg-green-700
-            text-white
-            px-4 py-2
-            rounded-2xl
-            shadow-md
-            active:scale-95
-            transition
-          "
-        >
-          <span className="text-lg">＋</span>
-          <span className="text-sm font-medium hidden sm:inline">
-            Getränk
-          </span>
-        </button>
-      </div>
+      {drinks.map((drink) => {
+        const breakdown = getStockBreakdown(
+          drink.stock,
+          drink.unitsPerCase
+        );
 
-      {/* Drink Cards */}
-      <div className="space-y-5">
-        {drinks.map((drink) => {
-          const cases = Math.floor(
-            drink.stock / drink.unitsPerCase
-          );
-          const bottles =
-            drink.stock % drink.unitsPerCase;
+        const lowStock =
+          drink.stock <= drink.minStock;
 
-          return (
-            <div
-              key={drink.id}
-              onClick={() => setSelectedDrink(drink)}
-              className="
-                cursor-pointer
-                bg-white dark:bg-gray-900
-                rounded-3xl
-                shadow-xl
-                p-6
-                space-y-4
-                border
-                hover:scale-[1.02]
-                transition
-              "
-            >
-              <div className="flex justify-between items-center">
+        return (
+          <div
+            key={drink.id}
+            className={`rounded-2xl shadow p-5 space-y-3 ${
+              lowStock
+                ? "bg-red-50 border border-red-300"
+                : "bg-white dark:bg-gray-900"
+            }`}
+          >
+            <div>
+              <h2 className="font-semibold text-lg">
+                {drink.name}
+              </h2>
 
-                <div>
-                  <h3 className="text-lg font-semibold">
-                    {drink.name}
-                  </h3>
+              <p className="text-sm text-gray-600">
+                Bestand:
+                <span className="font-semibold ml-1">
+                  {breakdown.cases} Kisten
+                </span>
+                {" + "}
+                <span className="font-semibold">
+                  {breakdown.bottles} Flaschen
+                </span>
+              </p>
 
-                  {drink.stock <= drink.minStock && (
-                    <span className="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full">
-                      ⚠ Niedriger Bestand
-                    </span>
-                  )}
-                </div>
-
-                <div className="text-right">
-                  <div className="text-xl font-bold">
-                    {drink.stock}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Flaschen
-                  </div>
-                </div>
-
-              </div>
-
-              <div className="flex justify-between text-sm text-gray-600">
-                <div>🧃 {cases} Kisten</div>
-                <div>🍾 {bottles} Flaschen</div>
-              </div>
+              {lowStock && (
+                <p className="text-red-600 text-sm font-medium">
+                  ⚠ Mindestbestand erreicht
+                </p>
+              )}
             </div>
-          );
-        })}
-      </div>
 
-      {/* Edit Stock Modal */}
+            <button
+              onClick={() =>
+                setSelectedDrink(drink)
+              }
+              className="w-full py-2 rounded-xl bg-green-600 text-white"
+            >
+              Bestand ändern
+            </button>
+          </div>
+        );
+      })}
+
       {selectedDrink && (
         <EditStockModal
           drink={selectedDrink}
-          onClose={() => setSelectedDrink(null)}
-          onSave={updateStock}
+          onClose={() =>
+            setSelectedDrink(null)
+          }
+          onSave={handleSave}
         />
       )}
-
-      {/* Add Drink Modal */}
-      {showAddModal && (
-        <AddDrinkModal
-          onClose={() => setShowAddModal(false)}
-          onCreated={() => {
-            setShowAddModal(false);
-            load();
-          }}
-        />
-      )}
-
     </div>
   );
 }

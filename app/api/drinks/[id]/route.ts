@@ -1,53 +1,65 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
-export async function DELETE(
-  req: Request,
+//
+// 🔄 Bestand aktualisieren
+//
+export async function PATCH(
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
-    const userIdRaw = cookies().get("userId")?.value;
+    const drinkId = Number(params.id);
+    const body = await request.json();
+    const { stock } = body;
 
-    if (!userIdRaw) {
+    if (isNaN(drinkId) || typeof stock !== "number") {
       return NextResponse.json(
-        { error: "Nicht eingeloggt" },
-        { status: 401 }
+        { error: "Ungültige Daten" },
+        { status: 400 }
       );
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: Number(userIdRaw) },
+    const updated = await prisma.drink.update({
+      where: { id: drinkId },
+      data: { stock },
     });
 
-    if (!user || user.role !== "ADMIN") {
-      return NextResponse.json(
-        { error: "Keine Berechtigung" },
-        { status: 403 }
-      );
-    }
+    return NextResponse.json(updated);
+  } catch (error) {
+    console.error("PATCH DRINK ERROR:", error);
+    return NextResponse.json(
+      { error: "Serverfehler" },
+      { status: 500 }
+    );
+  }
+}
 
+//
+// 🗑 Getränk löschen
+//
+export async function DELETE(
+  request: Request,
+  { params }: { params: { id: string } }
+) {
+  try {
     const drinkId = Number(params.id);
 
-    // 🔥 zuerst Logs löschen (wegen FK)
-    await prisma.countLog.deleteMany({
-      where: { drinkId },
-    });
-
-    // 🔥 dann Counts löschen
     await prisma.count.deleteMany({
       where: { drinkId },
     });
 
-    // 🔥 dann Drink löschen
+    await prisma.countLog.deleteMany({
+      where: { drinkId },
+    });
+
     await prisma.drink.delete({
       where: { id: drinkId },
     });
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
     console.error("DELETE DRINK ERROR:", error);
     return NextResponse.json(

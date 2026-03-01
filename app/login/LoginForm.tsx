@@ -96,7 +96,7 @@ export default function LoginPage() {
           onChange={(e) =>
             setPhone(e.target.value.replace(/\D/g, ""))
           }
-          placeholder="Handynummer hier eingeben"
+          placeholder="Hier Handynummer!"
           className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white"
         />
 

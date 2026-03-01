@@ -13,6 +13,7 @@ type Drink = {
 
 export default function DashboardPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
+  const [lastBooking, setLastBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [bookingAmounts, setBookingAmounts] =
     useState<Record<number, number>>({});
@@ -123,7 +124,16 @@ export default function DashboardPage() {
     setConfirmBooking(null);
   }
 
-  function handleUndo() {
+  async function handleUndo() {
+    const res = await fetch("/api/scan/undo");
+
+    if(!res.ok) {
+      alert("Keine Buchung gefunden");
+      return
+    }
+
+    const data = await res.json();
+    setLastBooking(data);
     setConfirmUndo(true);
   }
 
@@ -306,16 +316,30 @@ export default function DashboardPage() {
       )}
 
       {/* 🟥 Undo Modal */}
-      {confirmUndo && (
+      {confirmUndo && lastBooking && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 w-80 space-y-4 shadow-2xl">
+
             <h2 className="text-lg font-semibold text-center">
-              Letzte Buchung rückgängig?
+              Letzte Buchung
             </h2>
+
+            <div className="text-center space-y-1">
+              <p className="font-semibold text-red-600">
+                {lastBooking.quantity}x {lastBooking.drinkName}
+              </p>
+
+              <p className="text-sm text-gray-500">
+                {new Date(lastBooking.createdAt).toLocaleString()}
+              </p>
+            </div>
 
             <div className="flex gap-3">
               <button
-                onClick={() => setConfirmUndo(false)}
+                onClick={() => {
+                  setConfirmUndo(false);
+                  setLastBooking(null);
+                }}
                 className="flex-1 py-2 rounded-xl bg-gray-200"
               >
                 Abbrechen

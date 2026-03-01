@@ -223,7 +223,7 @@ export default function DashboardPage() {
               <input
                 type="number"
                 min="1"
-                value={bookingAmounts[drink.id] || 1}
+                value={bookingAmounts[drink.id] || ""}
                 onChange={(e) => {
                   const value = Math.max(
                     1,

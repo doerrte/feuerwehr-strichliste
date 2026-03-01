@@ -131,6 +131,11 @@ export default function DashboardPage() {
     if (lower.includes("fanta")) return "/drinks/fanta.png";
     if (lower.includes("limo")) return "/drinks/fanta.png";
     if (lower.includes("limo weiß")) return "/drinks/sprite.png";
+    if (lower.includes("fassbrause zitrone")) return "/drinks/sprite.png";
+    if (lower.includes("fassbrause-zitrone")) return "/drinks/sprite.png";
+    if (lower.includes("fassbrause")) return "/drinks/sprite.png";
+
+
 
 
 

@@ -11,15 +11,14 @@ export default function EditStockModal({
   onClose: () => void;
   onSave: (stock: number) => void;
 }) {
-  const [cases, setCases] = useState(
-    Math.floor(drink.stock / drink.unitsPerCase)
-  );
-  const [bottles, setBottles] = useState(
-    drink.stock % drink.unitsPerCase
-  );
+  const [cases, setCases] = useState("");
+  const [bottles, setBottles] = useState("");
+
+  const parsedCases = Number(cases) || 0;
+  const parsedBottles = Number(bottles) || 0;
 
   const total =
-    cases * drink.unitsPerCase + bottles;
+  parsedCases * drink.unitsPerCase + parsedBottles;
 
   async function handleDelete() {
   if (!drink) return;
@@ -58,7 +57,7 @@ export default function EditStockModal({
             type="number"
             value={cases}
             onChange={(e) =>
-              setCases(Number(e.target.value))
+              setCases(e.target.value)
             }
             placeholder="Kisten"
             className="w-full border p-3 rounded-xl"
@@ -68,14 +67,16 @@ export default function EditStockModal({
             type="number"
             value={bottles}
             onChange={(e) =>
-              setBottles(Number(e.target.value))
+              setBottles(e.target.value)
             }
             placeholder="Flaschen"
             className="w-full border p-3 rounded-xl"
           />
 
           <div className="text-sm text-gray-500">
-            Gesamt: <strong>{cases}</strong> Kästen <strong>{bottles}</strong>  Flaschen
+            Gesamt:{" "}
+            <strong>{parsedCases}</strong> Kisten{" "}
+            <strong>{parsedBottles}</strong> Flaschen
           </div>
 
         </div>

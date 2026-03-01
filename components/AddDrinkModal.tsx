@@ -16,7 +16,7 @@ export default function AddDrinkModal({
   const [cases, setCases] = useState("");
   const [unitsPerCase, setUnitsPerCase] = useState("");
   const [bottles, setBottles] = useState("");
-  const [minStock, setMinStock] = useState("10");
+  const [minStock, setMinStock] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 

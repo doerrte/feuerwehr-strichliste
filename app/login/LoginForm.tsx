@@ -95,11 +95,14 @@ export default function LoginPage() {
           onChange={(e) =>
             setPhone(e.target.value.replace(/\D/g, ""))
           }
-          placeholder="Telefonnummer"
+          placeholder="Handynummer"
           className="w-full px-4 py-3 rounded-2xl bg-white/10 border border-white/20 text-white"
         />
 
         {/* PIN Anzeige */}
+        <div className="flex justify-center">
+          Im PIN Feld wird keine Handynummer eingegeben, sondern nur eure PIN
+        </div>
         <div className="flex justify-center gap-4">
           {[0,1,2,3].map((i) => (
             <div

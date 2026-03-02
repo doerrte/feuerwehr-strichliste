@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const userIdRaw = cookies().get("userId")?.value;
+    const cookieStore = cookies();
+    const userIdRaw = cookieStore.get("userId")?.value;
 
     if (!userIdRaw) {
       return NextResponse.json(
@@ -34,10 +35,17 @@ export async function GET() {
       },
     });
 
-    if (!user || !user.active) {
+    if (!user) {
       return NextResponse.json(
-        { error: "Benutzer nicht gefunden" },
-        { status: 401 }
+        { error: "User nicht gefunden" },
+        { status: 404 }
+      );
+    }
+
+    if (!user.active) {
+      return NextResponse.json(
+        { error: "User deaktiviert" },
+        { status: 403 }
       );
     }
 

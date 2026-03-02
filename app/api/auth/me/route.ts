@@ -1,26 +1,26 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { cookies } from "next/headers";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
-    const userIdRaw = cookieStore.get("userId")?.value;
+    const cookieHeader = headers().get("cookie");
 
-    if (!userIdRaw) {
+    if (!cookieHeader) {
       return NextResponse.json(
         { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
 
-    const userId = Number(userIdRaw);
+    const match = cookieHeader.match(/userId=(\d+)/);
+    const userId = match ? Number(match[1]) : null;
 
-    if (isNaN(userId)) {
+    if (!userId) {
       return NextResponse.json(
-        { error: "Ungültige Session" },
+        { error: "Keine Session" },
         { status: 401 }
       );
     }
@@ -31,7 +31,6 @@ export async function GET() {
         id: true,
         name: true,
         role: true,
-        active: true,
       },
     });
 
@@ -42,18 +41,8 @@ export async function GET() {
       );
     }
 
-    if (!user.active) {
-      return NextResponse.json(
-        { error: "User deaktiviert" },
-        { status: 403 }
-      );
-    }
+    return NextResponse.json(user);
 
-    return NextResponse.json({
-      id: user.id,
-      name: user.name,
-      role: user.role,
-    });
   } catch (error) {
     console.error("AUTH ME ERROR:", error);
 

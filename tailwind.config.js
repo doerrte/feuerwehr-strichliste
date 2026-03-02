@@ -13,6 +13,7 @@ module.exports = {
       colors: {
         feuerwehr: {
           red: "#C8102E",
+          redDark: "#a50d25",
           dark: "#111111",
           gray: "#1F1F1F",
           light: "#F4F4F4",

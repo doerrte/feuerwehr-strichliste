@@ -198,7 +198,16 @@ export default function DashboardPage() {
         return (
           <div
             key={drink.id}
-            className="rounded-2xl bg-white dark:bg-gray-900 shadow p-5 space-y-4"
+            className="
+                        bg-white 
+                        dark:bg-[#111827]/80 
+                        backdrop-blur-xl 
+                        border 
+                        border-gray-200 
+                        dark:border-white/10 
+                        shadow-lg 
+                        rounded-2xl
+                      "
           >
             <div className="flex items-center gap-3">
               <img

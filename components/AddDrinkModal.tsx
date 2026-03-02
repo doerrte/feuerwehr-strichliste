@@ -145,6 +145,7 @@ export default function AddDrinkModal({
           <input
             type="text"
             inputMode="numeric"
+            placeholder="in Flaschen angeben"
             value={minStock}
             onChange={(e) =>
               setMinStock(onlyNumbers(e.target.value))

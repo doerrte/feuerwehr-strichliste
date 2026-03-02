@@ -1,5 +1,6 @@
 "use client";
 
+import { UNSTABLE_REVALIDATE_RENAME_ERROR } from "next/dist/lib/constants";
 import { useEffect, useState } from "react";
 
 type Drink = {
@@ -12,6 +13,7 @@ type Drink = {
 };
 
 export default function DashboardPage() {
+  const [username, setUsername] = useState("");
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [lastBooking, setLastBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -27,7 +29,20 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchDrinks();
+    fetchUser();
   }, []);
+
+  async function fetchUser() {
+    try {
+      const res = await fetch("/api/me");
+      if (!res.ok) return;
+
+      const data = await res.json();
+      setUsername(data.name);
+    } catch (error) {
+      console.error("User Fehler", error);
+    }
+}
 
   async function fetchDrinks() {
     try {
@@ -56,14 +71,15 @@ export default function DashboardPage() {
     if (lower.includes("bier")) return "/drinks/reissdorf.png";
     if (lower.includes("reissdorf")) return "/drinks/reissdorf.png";
     if (lower.includes("sprite")) return "/drinks/sprite.png";
+    if (lower.includes("limo weiß")) return "/drinks/sprite.png";
     if (lower.includes("cola-light")) return "/drinks/cola-light.png";
     if (lower.includes("cola light")) return "/drinks/cola-light.png";
     if (lower.includes("cola zero")) return "/drinks/cola-zero.png";
     if (lower.includes("cola-zero")) return "/drinks/cola-zero.png";
     if (lower.includes("fanta")) return "/drinks/fanta.png";
     if (lower.includes("limo")) return "/drinks/fanta.png";
-    if (lower.includes("limo weiß")) return "/drinks/sprite.png";
     if (lower.includes("fassbrause zitrone")) return "/drinks/fassbrause-zitrone.png";
+    if (lower.includes("fassbrause-zitrone")) return "/drinks/fassbrause-zitrone.png";
     if (lower.includes("fassbrause-zitrone")) return "/drinks/fassbrause-zitrone.png";
     if (lower.includes("fassbrause")) return "/drinks/fassbrause-zitrone.png";
     if (lower.includes("apfelschorle")) return "/drinks/apfelschorle.png";
@@ -161,7 +177,12 @@ export default function DashboardPage() {
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Hallo 👋</h1>
+       <h1 className="text-2xl font-bold">
+          Hallo{" "}
+          <span className="text-red-600">
+            {username}
+          </span>{" "}
+        </h1>
         <div className="mt-2 inline-block bg-red-600 text-white px-4 py-1 rounded-full text-sm">
           Gesamt-Striche: {totalStriche}
         </div>

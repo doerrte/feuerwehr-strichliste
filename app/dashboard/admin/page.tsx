@@ -93,7 +93,18 @@ export default function AdminPage() {
         {activeUsers.map((user) => (
           <div
             key={user.id}
-            className="bg-white dark:bg-gray-900 rounded-3xl shadow-lg p-5 space-y-4 border hover:scale-[1.01] transition"
+            className="
+                        bg-feuerwehr-lightCard
+                        dark:bg-feuerwehr-darkCard/80
+                        backdrop-blur-xl
+                        border
+                        border-feuerwehr-borderLight
+                        dark:border-feuerwehr-borderDark
+                        shadow-soft
+                        dark:shadow-premium
+                        rounded-premium
+                        p-5
+                      "
           >
             <div
               onClick={() => setSelectedUser(user)}

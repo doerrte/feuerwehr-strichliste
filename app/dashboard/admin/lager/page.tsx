@@ -109,12 +109,19 @@ export default function LagerPage() {
         return (
           <div
             key={drink.id}
-            className={`rounded-2xl shadow p-5 space-y-3 ${
-              lowStock
-                ? "bg-red-50 border border-red-300"
-                : "bg-white dark:bg-gray-900"
-            }`}
-          >
+            className="
+                        bg-feuerwehr-lightCard
+                        dark:bg-feuerwehr-darkCard/80
+                        backdrop-blur-xl
+                        border
+                        border-feuerwehr-borderLight
+                        dark:border-feuerwehr-borderDark
+                        shadow-soft
+                        dark:shadow-premium
+                        rounded-premium
+                        p-5
+                      "
+            >
             <div>
               <h2 className="font-semibold text-lg">
                 {drink.name}

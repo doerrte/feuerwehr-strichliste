@@ -13,31 +13,32 @@ module.exports = {
       colors: {
         feuerwehr: {
           red: "#C8102E",
-          redDark: "#a50d25",
-          dark: "#111111",
-          gray: "#1F1F1F",
-          light: "#F4F4F4",
+          redDark: "#A50D25",
+
+          dark: "#0B1220",
+          darkSoft: "#111827",
+          darkCard: "#1F2937",
+
+          light: "#F8FAFC",
+          lightCard: "#FFFFFF",
+
+          borderLight: "#E5E7EB",
+          borderDark: "rgba(255,255,255,0.08)",
         },
       },
 
-      borderRadius: {
-        xl: "1rem",
-        "2xl": "1.5rem",
-        "3xl": "2rem",
+      boxShadow: {
+        premium: "0 20px 40px rgba(0,0,0,0.25)",
+        soft: "0 8px 24px rgba(0,0,0,0.15)",
+        glow: "0 0 20px rgba(200,16,46,0.35)",
       },
 
-      boxShadow: {
-        soft: "0 10px 30px rgba(0,0,0,0.08)",
-        card: "0 8px 24px rgba(0,0,0,0.12)",
-        premium: "0 20px 40px rgba(0,0,0,0.15)",
+      borderRadius: {
+        premium: "1.75rem",
       },
 
       backdropBlur: {
         xs: "2px",
-      },
-
-      transitionTimingFunction: {
-        smooth: "cubic-bezier(0.4, 0, 0.2, 1)",
       },
 
       animation: {

@@ -125,7 +125,18 @@ export default function AdminStrichlistePage() {
           <div
             key={user.id}
             onClick={() => openUser(user)}
-            className="flex justify-between items-center bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl p-5 shadow-lg border hover:scale-[1.01] transition cursor-pointer"
+            className="
+                        bg-feuerwehr-lightCard
+                        dark:bg-feuerwehr-darkCard/80
+                        backdrop-blur-xl
+                        border
+                        border-feuerwehr-borderLight
+                        dark:border-feuerwehr-borderDark
+                        shadow-soft
+                        dark:shadow-premium
+                        rounded-premium
+                        p-5
+                      "
           >
             <div>
               <h3 className="text-lg font-medium">

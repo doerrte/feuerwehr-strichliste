@@ -34,7 +34,7 @@ export default function DashboardPage() {
 
   async function fetchUser() {
     try {
-      const res = await fetch("/api/me");
+      const res = await fetch("/api/auth/me");
       if (!res.ok) return;
 
       const data = await res.json();

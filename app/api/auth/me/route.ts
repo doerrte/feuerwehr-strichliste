@@ -20,7 +20,7 @@ export async function GET() {
 
     if (!userId) {
       return NextResponse.json(
-        { error: "Keine Session" },
+        { error: "Nicht eingeloggt" },
         { status: 401 }
       );
     }
@@ -30,6 +30,7 @@ export async function GET() {
       select: {
         id: true,
         name: true,
+        phone: true,
         role: true,
       },
     });

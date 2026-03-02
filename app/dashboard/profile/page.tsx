@@ -26,14 +26,12 @@ export default function ProfilePage() {
     cache: "no-store",
   });
 
-  if (res.ok) {
-    const data = await res.json();
+  if (!res.ok) return;
 
-    if (data.user) {
-      setUser(data.user);
-      setPhone(data.user.phone ?? "");
-    }
-  }
+  const data = await res.json();
+
+  setUser(data);
+  setPhone(data.phone ?? "");
 }
 
   async function handleSave() {

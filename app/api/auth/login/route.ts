@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
     response.cookies.set("userId", String(user.id), {
       httpOnly: true,
-      secure: true,
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
     });

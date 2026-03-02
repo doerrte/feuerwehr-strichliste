@@ -37,10 +37,6 @@ module.exports = {
         premium: "1.75rem",
       },
 
-      backdropBlur: {
-        xs: "2px",
-      },
-
       animation: {
         fadeIn: "fadeIn 0.3s ease-out",
         slideUp: "slideUp 0.3s ease-out",

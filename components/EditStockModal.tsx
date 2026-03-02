@@ -18,34 +18,33 @@ export default function EditStockModal({
   const parsedBottles = Number(bottles) || 0;
 
   const total =
-  parsedCases * drink.unitsPerCase + parsedBottles;
+    parsedCases * drink.unitsPerCase + parsedBottles;
 
   async function handleDelete() {
-  if (!drink) return;
+    if (!drink) return;
 
-  const confirmed = confirm(
-    `Willst du ${drink.name} wirklich löschen?`
-  );
+    const confirmed = confirm(
+      `Willst du ${drink.name} wirklich löschen?`
+    );
 
-  if (!confirmed) return;
+    if (!confirmed) return;
 
-  const res = await fetch(`/api/drinks/${drink.id}`, {
-    method: "DELETE",
-  });
+    const res = await fetch(`/api/drinks/${drink.id}`, {
+      method: "DELETE",
+    });
 
-  if (!res.ok) {
-    alert("Fehler beim Löschen");
-    return;
+    if (!res.ok) {
+      alert("Fehler beim Löschen");
+      return;
+    }
+
+    onClose();
+    window.location.reload();
   }
-
-  onClose();
-  window.location.reload(); // oder load() wenn vorhanden
-}  
 
   return (
     <div className="fixed inset-0 z-[999] bg-black/50 backdrop-blur-sm flex items-center justify-center p-6">
-
-      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-6 animate-in fade-in zoom-in-95">
+      <div className="bg-white dark:bg-gray-900 rounded-3xl shadow-2xl w-full max-w-sm p-6 space-y-6">
 
         <h2 className="text-xl font-semibold">
           Bestand ändern
@@ -55,21 +54,21 @@ export default function EditStockModal({
 
           <input
             type="number"
+            placeholder="Kisten"
             value={cases}
             onChange={(e) =>
               setCases(e.target.value)
             }
-            placeholder="Kisten"
             className="w-full border p-3 rounded-xl"
           />
 
           <input
             type="number"
+            placeholder="Flaschen"
             value={bottles}
             onChange={(e) =>
               setBottles(e.target.value)
             }
-            placeholder="Flaschen"
             className="w-full border p-3 rounded-xl"
           />
 
@@ -77,14 +76,15 @@ export default function EditStockModal({
             Gesamt:{" "}
             <strong>{parsedCases}</strong> Kisten{" "}
             <strong>{parsedBottles}</strong> Flaschen
+            <br />
+            = <strong>{total}</strong> Flaschen gesamt
           </div>
-
         </div>
 
         <div className="flex gap-3 pt-3">
           <button
             onClick={onClose}
-            className="flex-1 py-2 rounded-xl bg-gray-200 dark:bg-gray-700"
+            className="flex-1 py-2 rounded-xl bg-gray-200"
           >
             Abbrechen
           </button>
@@ -95,17 +95,16 @@ export default function EditStockModal({
           >
             Speichern
           </button>
-
-          <button
-            onClick={handleDelete}
-            className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium mt-4"
-          >
-            Getränk löschen
-          </button>
         </div>
 
-      </div>
+        <button
+          onClick={handleDelete}
+          className="w-full py-3 rounded-2xl bg-red-600 text-white font-medium"
+        >
+          Getränk löschen
+        </button>
 
+      </div>
     </div>
   );
 }

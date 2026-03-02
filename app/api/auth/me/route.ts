@@ -6,17 +6,22 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const cookieStore = cookies();
-    const userIdCookie = cookieStore.get("userId");
+    const userIdRaw = cookies().get("userId")?.value;
 
-    if (!userIdCookie) {
-      return NextResponse.json({ user: null }, { status: 200 });
+    if (!userIdRaw) {
+      return NextResponse.json(
+        { error: "Nicht eingeloggt" },
+        { status: 401 }
+      );
     }
 
-    const userId = Number(userIdCookie.value);
+    const userId = Number(userIdRaw);
 
-    if (!userId) {
-      return NextResponse.json({ user: null }, { status: 200 });
+    if (isNaN(userId)) {
+      return NextResponse.json(
+        { error: "Ungültige Session" },
+        { status: 401 }
+      );
     }
 
     const user = await prisma.user.findUnique({
@@ -24,40 +29,29 @@ export async function GET() {
       select: {
         id: true,
         name: true,
-        phone: true,
         role: true,
         active: true,
       },
     });
 
     if (!user || !user.active) {
-      const response = NextResponse.json(
-        { user: null },
-        { status: 200 }
+      return NextResponse.json(
+        { error: "Benutzer nicht gefunden" },
+        { status: 401 }
       );
-
-      response.cookies.delete("userId");
-
-      return response;
     }
 
-    return NextResponse.json(
-      {
-        user: {
-          id: user.id,
-          name: user.name,
-          phone: user.phone,
-          role: user.role,
-        },
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      id: user.id,
+      name: user.name,
+      role: user.role,
+    });
   } catch (error) {
     console.error("AUTH ME ERROR:", error);
 
     return NextResponse.json(
-      { user: null },
-      { status: 200 }
+      { error: "Serverfehler" },
+      { status: 500 }
     );
   }
 }

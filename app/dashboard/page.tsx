@@ -11,13 +11,35 @@ type Drink = {
   amount: number;
 };
 
+type User = {
+  id: number;
+  name: string;
+  role: string;
+};
+
 export default function DashboardPage() {
   const [drinks, setDrinks] = useState<Drink[]>([]);
+  const [user, setUser] = useState<User | null>(null);
+  const [bookingAmounts, setBookingAmounts] =
+    useState<Record<number, string>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    fetchUser();
     fetchDrinks();
   }, []);
+
+  async function fetchUser() {
+    const res = await fetch("/api/auth/me", {
+      credentials: "include",
+      cache: "no-store",
+    });
+
+    if (!res.ok) return;
+
+    const data = await res.json();
+    setUser(data);
+  }
 
   async function fetchDrinks() {
     const res = await fetch("/api/drinks/me");
@@ -26,10 +48,38 @@ export default function DashboardPage() {
     setLoading(false);
   }
 
-  const totalStriche = drinks.reduce(
-    (sum, drink) => sum + drink.amount,
-    0
-  );
+  async function handleBook(drinkId: number) {
+    const value = bookingAmounts[drinkId];
+    const quantity = value ? Number(value) : 1;
+
+    const res = await fetch("/api/scan", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ drinkId, quantity }),
+    });
+
+    if (!res.ok) {
+      alert("Fehler beim Buchen");
+      return;
+    }
+
+    setDrinks((prev) =>
+      prev.map((d) =>
+        d.id === drinkId
+          ? {
+              ...d,
+              amount: d.amount + quantity,
+              stock: d.stock - quantity,
+            }
+          : d
+      )
+    );
+
+    setBookingAmounts((prev) => ({
+      ...prev,
+      [drinkId]: "",
+    }));
+  }
 
   function getStockBreakdown(stock: number, unitsPerCase: number) {
     const cases = Math.floor(stock / unitsPerCase);
@@ -37,17 +87,25 @@ export default function DashboardPage() {
     return { cases, bottles };
   }
 
+  const totalStriche = drinks.reduce(
+    (sum, drink) => sum + drink.amount,
+    0
+  );
+
   if (loading) {
     return <div className="p-6 text-center">Lade...</div>;
   }
 
   return (
-    <div className="p-6 max-w-md mx-auto space-y-6 animate-fadeIn">
+    <div className="p-6 max-w-md mx-auto space-y-6">
 
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold">
-          Hallo Admin
+          Hallo{" "}
+          <span className="text-feuerwehr-red">
+            {user?.name ?? "👋"}
+          </span>
         </h1>
 
         <div className="
@@ -114,7 +172,69 @@ export default function DashboardPage() {
               </p>
             </div>
 
+            {/* 🔥 Minus / Input / Plus */}
+            <div className="flex items-center justify-center gap-4">
+
+              <button
+                onClick={() =>
+                  setBookingAmounts((prev) => ({
+                    ...prev,
+                    [drink.id]: String(
+                      Math.max(
+                        1,
+                        (Number(prev[drink.id]) || 1) - 1
+                      )
+                    ),
+                  }))
+                }
+                className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700"
+              >
+                −
+              </button>
+
+              <input
+                type="number"
+                min="1"
+                value={bookingAmounts[drink.id] || ""}
+                placeholder="1"
+                onChange={(e) =>
+                  setBookingAmounts((prev) => ({
+                    ...prev,
+                    [drink.id]: e.target.value.replace(/\D/g, ""),
+                  }))
+                }
+                className="
+                  w-16
+                  text-center
+                  text-lg
+                  font-semibold
+                  border
+                  border-feuerwehr-borderLight
+                  dark:border-feuerwehr-borderDark
+                  bg-white
+                  dark:bg-feuerwehr-darkCard/70
+                  rounded-lg
+                  py-1
+                "
+              />
+
+              <button
+                onClick={() =>
+                  setBookingAmounts((prev) => ({
+                    ...prev,
+                    [drink.id]: String(
+                      (Number(prev[drink.id]) || 1) + 1
+                    ),
+                  }))
+                }
+                className="w-10 h-10 rounded-full bg-green-500 text-white"
+              >
+                +
+              </button>
+            </div>
+
             <button
+              onClick={() => handleBook(drink.id)}
               className="
                 w-full
                 py-3
@@ -126,6 +246,7 @@ export default function DashboardPage() {
                 shadow-md
                 hover:shadow-glow
                 active:scale-95
+                transition
               "
             >
               Buchen

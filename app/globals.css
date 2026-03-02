@@ -4,16 +4,18 @@
 
 /* Feuerwehr optional globale Styles */
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  @apply bg-gray-100 dark:bg-gray-950;
+  font-family: system-ui, sans-serif;
 }
 
-/* Scrollbar schöner */
-::-webkit-scrollbar {
-  width: 6px;
+button {
+  transition: all 0.2s ease;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #c8102e;
-  border-radius: 9999px;
+input {
+  outline: none;
 }

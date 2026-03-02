@@ -21,9 +21,10 @@ export default function RootLayout({
       <body className="
                         min-h-screen 
                         bg-feuerwehr-light 
-                        dark:bg-feuerwehr-dark 
+                        dark:bg-gradient-to-b
+                        dark:from-feuerwehr-dark
                         text-gray-900 
-                        dark:text-gray-100 
+                        dark:to-feuerwehr-darkSoft 
                         transition-colors 
                         duration-300
                       "

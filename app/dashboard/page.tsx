@@ -96,6 +96,22 @@ export default function DashboardPage() {
     return <div className="p-6 text-center">Lade...</div>;
   }
 
+  function getDrinkImage(name: string) {
+  const lower = name.toLowerCase();
+
+  if (lower.includes("wasser")) return "/drinks/gerolsteiner.png";
+  if (lower.includes("gerolsteiner")) return "/drinks/gerolsteiner.png";
+  if (lower.includes("cola")) return "/drinks/cola.png";
+  if (lower.includes("bier")) return "/drinks/reissdorf.png";
+  if (lower.includes("reissdorf")) return "/drinks/reissdorf.png";
+  if (lower.includes("sprite")) return "/drinks/sprite.png";
+  if (lower.includes("fanta")) return "/drinks/fanta.png";
+  if (lower.includes("fassbrause")) return "/drinks/fassbrause-zitrone.png";
+  if (lower.includes("apfelschorle")) return "/drinks/apfelschorle.png";
+
+  return "/drinks/default.png";
+}
+
   return (
     <div className="p-6 max-w-md mx-auto space-y-6">
 
@@ -131,6 +147,8 @@ export default function DashboardPage() {
           drink.unitsPerCase
         );
 
+
+
         return (
           <div
             key={drink.id}
@@ -149,27 +167,37 @@ export default function DashboardPage() {
             "
           >
             <div>
-              <h2 className="font-semibold text-lg">
-                {drink.name}
-              </h2>
+              <div className="flex items-center gap-4">
 
-              <p className="text-sm text-gray-500">
-                Deine Striche:{" "}
-                <span className="text-feuerwehr-red font-semibold">
-                  {drink.amount}
-                </span>
-              </p>
+                  <img
+                    src={getDrinkImage(drink.name)}
+                    alt={drink.name}
+                    className="w-14 h-14 object-contain"
+                  />
 
-              <p className="text-sm text-gray-500">
-                Bestand:
-                <span className="font-semibold ml-1">
-                  {breakdown.cases} Kisten
-                </span>{" "}
-                +{" "}
-                <span className="font-semibold">
-                  {breakdown.bottles} Flaschen
-                </span>
-              </p>
+                  <div>
+                    <h2 className="font-semibold text-lg">
+                      {drink.name}
+                    </h2>
+                  </div>
+                <p className="text-sm text-gray-500">
+                  Deine Striche:{" "}
+                  <span className="text-feuerwehr-red font-semibold">
+                    {drink.amount}
+                  </span>
+                </p>
+
+                <p className="text-sm text-gray-500">
+                  Bestand:
+                  <span className="font-semibold ml-1">
+                    {breakdown.cases} Kisten
+                  </span>{" "}
+                  +{" "}
+                  <span className="font-semibold">
+                    {breakdown.bottles} Flaschen
+                  </span>
+                </p>
+              </div>
             </div>
 
             {/* 🔥 Minus / Input / Plus */}
